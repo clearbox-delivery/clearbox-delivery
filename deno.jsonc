@@ -1,0 +1,18 @@
+{
+  "tasks": {
+    "test:unit": "deno test --config=deno.jsonc tests/unit",
+    "test:integration": "deno test --config=deno.jsonc --allow-env --allow-net tests/integration"
+  },
+  "compilerOptions": {
+    "strict": true
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}

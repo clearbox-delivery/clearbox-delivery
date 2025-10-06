@@ -1,0 +1,43 @@
+﻿name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno (v2)
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.x
+
+      - name: Unit tests
+        run: deno task test:unit
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Start Supabase (local)
+        working-directory: infra
+        run: |
+          # Trim down non-essential services if the defaults change (e.g., studio, imgproxy)
+          supabase start
+          supabase status
+
+      - name: Reset DB with test env
+        working-directory: infra
+        run: supabase db reset --force --env-file .env.test
+
+      - name: Integration tests
+        run: deno task test:integration
+
+      - name: Stop Supabase
+        if: always()
+        working-directory: infra
+        run: supabase stop
