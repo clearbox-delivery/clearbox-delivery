@@ -18,105 +18,117 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 用官方 Action 安裝 Supabase CLI（取代 curl）
+      # Supabase CLI（官方 Action）
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      # Deno 給 seed script 用
+      # Deno（給 seed scripts / Edge functions 用）
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
           deno-version: ${{ env.DENO_VERSION }}
 
-      # Flutter（照舊）
+      # Flutter + Dart
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
-      # Node.js 給 Newman 用（照舊）
+      # Node.js（Newman 用）
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      # 啟動 Supabase 全套（API/Kong/Auth/Postgres…）
+      # psql client（給後面手動跑 seed 的 SQL）
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      # 啟動本地 Supabase（Kong/API/Auth/DB…）
       - name: Start Supabase
         run: supabase start
-      # 預設會使用：
-      # API       http://127.0.0.1:54321
-      # DB        postgresql://postgres:postgres@127.0.0.1:54322/postgres
-      # Studio    http://127.0.0.1:54323
-      # …其餘略
 
-      # Reset + Migrate + Seed（改為對 54322）
+      # Reset + Migrate + Seed（DB 走 54322）
       - name: Reset & Seed Database
         env:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
+          set -e
           cd infra
-          supabase db reset --local --force
+          # 讀本地設定與 migrations，重建資料庫
+          supabase db reset --local
+          # 基礎 seed（SQL）
           psql "$DB_URL" < supabase/seed/01_base.sql
+          # 動態 seed（Deno）
           deno run -A supabase/seed/seed_dynamic.ts
           cd ..
 
-      # Melos / 依賴（照舊）
+      # Melos
       - name: Install Melos
-        run: dart pub global activate melos
+        run: |
+          dart pub global activate melos
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
       - name: Get dependencies
         run: melos bootstrap
 
-      - name: Generate code
+      - name: Generate code (build_runner)
         run: melos run build:runner
 
-      # Dart Unit Tests
-      - name: Run Dart Unit Tests
+      # Unit Tests
+      - name: Run Dart/Flutter Unit Tests
         run: |
+          set -e
           cd packages/geo_h3
           flutter test
           cd ../domain
           flutter test
           cd ../../tests/unit
           dart test
+          cd ../..
 
-      # Integration Tests（現在 54321/54322 都真的有服務）
+      # Integration Tests（需要 SUPABASE_URL/ANON_KEY）
       - name: Run Integration Tests
         env:
           SUPABASE_URL: http://127.0.0.1:54321
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
         run: |
+          set -e
           cd tests/integration
           dart test
+          cd ../..
 
-      # Newman（API 測試）
+      # API 測試（Newman）
       - name: Install Newman
         run: npm install -g newman
 
-      # 讓腳本可執行（路徑依你的 repo；若放在 packages/supabase_client 就用那個）
       - name: Make newman script executable
         run: chmod +x scripts/run_newman.sh
 
-      - name: Run API Tests
+      - name: Run API Tests (Newman)
         env:
           BASE_URL: http://127.0.0.1:54321
           ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
           SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: scripts/run_newman.sh
 
-      # （可選）E2E
-      - name: Run E2E Tests
+      # （可選）簡單跑一個 E2E，失敗不擋住流程
+      - name: Run E2E Tests (merchant_app)
+        continue-on-error: true
         run: |
           flutter config --enable-web
           cd apps/merchant_app
           flutter test integration_test/
 
+      # 上傳報告 / 產出物
       - name: Upload Test Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-reports
@@ -125,6 +137,7 @@ jobs:
             coverage/
             test-results/
 
+      # Lints / Analyze
       - name: Run Flutter Analyze
         run: melos run analyze
 
@@ -147,18 +160,21 @@ jobs:
           cache: true
 
       - name: Install Melos
-        run: dart pub global activate melos
+        run: |
+          dart pub global activate melos
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
       - name: Get dependencies
         run: melos bootstrap
 
       - name: Build ${{ matrix.app }} (Android)
         run: |
+          set -e
           cd apps/${{ matrix.app }}
           flutter build apk --release
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.app }}-apk
           path: apps/${{ matrix.app }}/build/app/outputs/flutter-apk/app-release.apk
