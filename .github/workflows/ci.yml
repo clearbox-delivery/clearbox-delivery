@@ -61,7 +61,7 @@ jobs:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
           set -e
-          supabase db reset --local --force
+          supabase db reset --local --yes
           psql "$DB_URL" < supabase/seed/01_base.sql
           deno run -A supabase/seed/seed_dynamic.ts
 
