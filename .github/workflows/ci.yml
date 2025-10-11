@@ -28,7 +28,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: ${{ env.DENO_VERSION }}
+          deno-version: "1.46.3"
 
       # Flutter + Dart
       - name: Setup Flutter
