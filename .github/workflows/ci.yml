@@ -30,6 +30,9 @@ jobs:
         with:
           deno-version: "1.46.3"
 
+      - name: Check Deno version
+        run: deno --version
+
       # Flutter + Dart
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -61,7 +64,7 @@ jobs:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
           set -e
-          supabase db reset --local --yes
+          supabase db reset --local --no-seed
           psql "$DB_URL" < supabase/seed/01_base.sql
           deno run -A supabase/seed/seed_dynamic.ts
 
@@ -175,3 +178,8 @@ jobs:
         with:
           name: ${{ matrix.app }}-apk
           path: apps/${{ matrix.app }}/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Stop Supabase (always)
+        if: always()
+        working-directory: infra
+        run: supabase stop
