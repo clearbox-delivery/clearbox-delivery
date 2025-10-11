@@ -1,30 +1,70 @@
-# Node / Deno / OS
-node_modules/
-dist/
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
 .DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
 
-# Supabase local
-**/supabase/.temp
-**/supabase/.branches
-**/supabase/.volumes
-**/supabase/docker/**
-*.db
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
 
-# Env
-.env*
-!.env.example
+# VS Code
+.vscode/
 
-# Flutter (placeholder)
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
 **/build/
-**/.dart_tool/
-**/.flutter-plugins*
-**/.packages
-**/ios/Pods/
 
-# Editor
-**/.vscode/
-**/.idea/
-# Deno
-.deno/
-**/.deno/
-**/deno_dir/
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Generated files
+**/*.freezed.dart
+**/*.g.dart
+**/*.gr.dart
+**/*.config.dart
+
+# Coverage
+coverage/
+test-results/
+
+# Supabase
+infra/.env
+infra/.env.local
+infra/supabase/.branches
+infra/supabase/.temp
+
+# Newman reports
+tests/api/newman-report.xml
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Melos
+.melos_tool/

@@ -1,0 +1,164 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+env:
+  FLUTTER_VERSION: '3.24.x'
+  DENO_VERSION: 'v1.x'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 用官方 Action 安裝 Supabase CLI（取代 curl）
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Deno 給 seed script 用
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: ${{ env.DENO_VERSION }}
+
+      # Flutter（照舊）
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      # Node.js 給 Newman 用（照舊）
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 啟動 Supabase 全套（API/Kong/Auth/Postgres…）
+      - name: Start Supabase
+        run: supabase start
+      # 預設會使用：
+      # API       http://127.0.0.1:54321
+      # DB        postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      # Studio    http://127.0.0.1:54323
+      # …其餘略
+
+      # Reset + Migrate + Seed（改為對 54322）
+      - name: Reset & Seed Database
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          cd infra
+          supabase db reset --local --force
+          psql "$DB_URL" < supabase/seed/01_base.sql
+          deno run -A supabase/seed/seed_dynamic.ts
+          cd ..
+
+      # Melos / 依賴（照舊）
+      - name: Install Melos
+        run: dart pub global activate melos
+
+      - name: Get dependencies
+        run: melos bootstrap
+
+      - name: Generate code
+        run: melos run build:runner
+
+      # Dart Unit Tests
+      - name: Run Dart Unit Tests
+        run: |
+          cd packages/geo_h3
+          flutter test
+          cd ../domain
+          flutter test
+          cd ../../tests/unit
+          dart test
+
+      # Integration Tests（現在 54321/54322 都真的有服務）
+      - name: Run Integration Tests
+        env:
+          SUPABASE_URL: http://127.0.0.1:54321
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+        run: |
+          cd tests/integration
+          dart test
+
+      # Newman（API 測試）
+      - name: Install Newman
+        run: npm install -g newman
+
+      # 讓腳本可執行（路徑依你的 repo；若放在 packages/supabase_client 就用那個）
+      - name: Make newman script executable
+        run: chmod +x scripts/run_newman.sh
+
+      - name: Run API Tests
+        env:
+          BASE_URL: http://127.0.0.1:54321
+          ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+          SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: scripts/run_newman.sh
+
+      # （可選）E2E
+      - name: Run E2E Tests
+        run: |
+          flutter config --enable-web
+          cd apps/merchant_app
+          flutter test integration_test/
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-reports
+          path: |
+            tests/api/newman-report.xml
+            coverage/
+            test-results/
+
+      - name: Run Flutter Analyze
+        run: melos run analyze
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    strategy:
+      matrix:
+        app: [customer_app, merchant_app, courier_app]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install Melos
+        run: dart pub global activate melos
+
+      - name: Get dependencies
+        run: melos bootstrap
+
+      - name: Build ${{ matrix.app }} (Android)
+        run: |
+          cd apps/${{ matrix.app }}
+          flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.app }}-apk
+          path: apps/${{ matrix.app }}/build/app/outputs/flutter-apk/app-release.apk

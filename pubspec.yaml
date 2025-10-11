@@ -1,0 +1,21 @@
+name: clearbox_delivery
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+workspace:
+  # apps
+  - apps/courier_app
+  - apps/customer_app
+  - apps/merchant_app
+
+  # packages
+  - packages/core_data
+  - packages/core_ui
+  - packages/domain
+  - packages/geo_h3
+  - packages/supabase_client
+
+dev_dependencies:
+  melos: ^7.1.1

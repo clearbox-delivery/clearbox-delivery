@@ -1,0 +1,49 @@
+name: clearbox_delivery
+repository: https://github.com/yourorg/clearbox-delivery
+
+packages:
+  - apps/**
+  - packages/**
+
+command:
+  bootstrap:
+    environment:
+      sdk: ">=3.0.0 <4.0.0"
+      flutter: ">=3.24.0"
+
+scripts:
+  analyze:
+    run: melos exec -c 1 -- flutter analyze
+    description: Run Flutter analyze for all packages
+
+  format:
+    run: melos exec -c 1 -- dart format --set-exit-if-changed .
+    description: Run Dart formatter on all packages
+
+  test:
+    run: melos exec -c 1 --fail-fast -- flutter test --no-pub --coverage
+    description: Run Flutter tests for all packages
+
+  test\:unit:
+    run: flutter test tests/unit
+    description: Run unit tests
+    exec:
+      concurrency: 1
+
+  test\:integration:
+    run: flutter test tests/integration
+    description: Run integration tests
+    exec:
+      concurrency: 1
+
+  clean:
+    run: melos exec -c 1 -- flutter clean
+    description: Clean all packages
+
+  get:
+    run: melos exec -c 1 -- flutter pub get
+    description: Get dependencies for all packages
+
+  build\:runner:
+    run: melos exec -c 1 -- dart run build_runner build --delete-conflicting-outputs
+    description: Run build_runner for code generation

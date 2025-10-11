@@ -1,0 +1,203 @@
+{
+  "info": {
+    "name": "ClearBox Delivery API Tests",
+    "description": "API contract tests for ClearBox Delivery",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "SUPABASE_URL",
+      "value": "http://localhost:54321"
+    },
+    {
+      "key": "ANON_JWT",
+      "value": "test-anon-key"
+    },
+    {
+      "key": "MERCHANT_JWT",
+      "value": "test-merchant-jwt"
+    },
+    {
+      "key": "COURIER_JWT",
+      "value": "test-courier-jwt"
+    }
+  ],
+  "item": [
+    {
+      "name": "create_order - Valid Price",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Valid price returns 201', function() {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Order has correct delivery price', function() {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.delivery_price_user_set).to.eql(45);",
+              "});",
+              "",
+              "pm.test('Order status is PENDING_STORE_CONFIRM', function() {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.status).to.eql('PENDING_STORE_CONFIRM');",
+              "});",
+              "",
+              "// Save order ID for next tests",
+              "pm.collectionVariables.set('test_order_id', pm.response.json().id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{ANON_JWT}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"p_merchant_id\": \"00000000-0000-0000-0000-000000000002\",\n  \"p_items\": [\n    {\"sku\": \"test-001\", \"name\": \"Test Item\", \"quantity\": 1, \"unit_price\": 100}\n  ],\n  \"p_delivery_price\": 45,\n  \"p_customer_notes\": \"API test order\"\n}"
+        },
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/rpc/create_order",
+          "host": ["{{SUPABASE_URL}}"],
+          "path": ["rest", "v1", "rpc", "create_order"]
+        }
+      }
+    },
+    {
+      "name": "create_order - Price Below Min",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('TC-CUST-002: Price below min returns 422', function() {",
+              "  pm.response.to.have.status(422);",
+              "});",
+              "",
+              "pm.test('Error code is ERR_PRICE_MIN', function() {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.message).to.include('ERR_PRICE_MIN');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{ANON_JWT}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"p_merchant_id\": \"00000000-0000-0000-0000-000000000002\",\n  \"p_items\": [{\"sku\": \"test\", \"name\": \"Test\", \"quantity\": 1, \"unit_price\": 100}],\n  \"p_delivery_price\": 0\n}"
+        },
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/rpc/create_order",
+          "host": ["{{SUPABASE_URL}}"],
+          "path": ["rest", "v1", "rpc", "create_order"]
+        }
+      }
+    },
+    {
+      "name": "merchant_confirm_order",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('TC-MER-CO-001: Confirm returns 200', function() {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Status changes to WAITING_COURIER', function() {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.status).to.eql('WAITING_COURIER');",
+              "});",
+              "",
+              "pm.test('Prep time is set', function() {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.prep_time_minutes).to.eql(15);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{MERCHANT_JWT}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"p_order_id\": \"{{test_order_id}}\",\n  \"p_prep_time_minutes\": 15,\n  \"p_merchant_notes\": \"Confirmed\"\n}"
+        },
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/rpc/merchant_confirm_order",
+          "host": ["{{SUPABASE_URL}}"],
+          "path": ["rest", "v1", "rpc", "merchant_confirm_order"]
+        }
+      }
+    },
+    {
+      "name": "accept_order",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('TC-COU-ACPT-001: Accept returns 200', function() {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Status changes to COURIER_ASSIGNED', function() {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.status).to.eql('COURIER_ASSIGNED');",
+              "});",
+              "",
+              "pm.test('Courier ID is set', function() {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.courier_id).to.not.be.null;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{COURIER_JWT}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"p_order_id\": \"{{test_order_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/rpc/accept_order",
+          "host": ["{{SUPABASE_URL}}"],
+          "path": ["rest", "v1", "rpc", "accept_order"]
+        }
+      }
+    }
+  ]
+}
+
+

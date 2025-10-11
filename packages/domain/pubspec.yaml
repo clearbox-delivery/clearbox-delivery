@@ -1,0 +1,23 @@
+name: domain
+description: Business logic and use cases for ClearBox Delivery
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  core_data:
+    path: ../core_data
+  geo_h3:
+    path: ../geo_h3
+  latlong2: ^0.9.0
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+  test: ^1.24.9
+  mocktail: ^1.0.3
+
+

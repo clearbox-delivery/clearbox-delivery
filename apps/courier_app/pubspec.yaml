@@ -1,0 +1,46 @@
+name: courier_app
+description: Courier app for ClearBox Delivery
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Shared packages
+  core_data:
+    path: ../../packages/core_data
+  core_ui:
+    path: ../../packages/core_ui
+  domain:
+    path: ../../packages/domain
+  supabase_client:
+    path: ../../packages/supabase_client
+  geo_h3:
+    path: ../../packages/geo_h3
+
+  # State management & routing
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.0.0
+
+  # Utilities
+  intl: ^0.20.0
+  latlong2: ^0.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+
