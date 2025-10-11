@@ -7,8 +7,8 @@ on:
     branches: [develop, main]
 
 env:
-  FLUTTER_VERSION: '3.24.x'
-  DENO_VERSION: 'v1.x'
+  FLUTTER_VERSION: "3.24.x"
+  DENO_VERSION: "v1.x"
 
 jobs:
   test:
@@ -37,37 +37,33 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
-      # Node.js（Newman 用）
+      # Node.js（Newman 用；不設 cache 以避免 lockfile 警告）
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
 
-      # psql client（給後面手動跑 seed 的 SQL）
+      # psql client（給手動跑 seed 的 SQL）
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
-      # 啟動本地 Supabase（Kong/API/Auth/DB…）
-      - name: Start Supabase
+      # 啟動本地 Supabase（Kong/API/Auth/DB…）— 一定要在 infra/ 底下跑
+      - name: Start Supabase (local stack)
+        working-directory: infra
         run: supabase start
 
-      # Reset + Migrate + Seed（DB 走 54322）
+      # Reset + Migrate + Seed（DB 走 54322）— 同樣在 infra/ 底下
       - name: Reset & Seed Database
+        working-directory: infra
         env:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
           set -e
-          cd infra
-          # 讀本地設定與 migrations，重建資料庫
-          supabase db reset --local
-          # 基礎 seed（SQL）
+          supabase db reset --local --force
           psql "$DB_URL" < supabase/seed/01_base.sql
-          # 動態 seed（Deno）
           deno run -A supabase/seed/seed_dynamic.ts
-          cd ..
 
       # Melos
       - name: Install Melos
@@ -126,7 +122,7 @@ jobs:
           cd apps/merchant_app
           flutter test integration_test/
 
-      # 上傳報告 / 產出物
+      # 上傳報告 / 產出物（若沒檔案不要失敗）
       - name: Upload Test Reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -136,6 +132,7 @@ jobs:
             tests/api/newman-report.xml
             coverage/
             test-results/
+          if-no-files-found: ignore
 
       # Lints / Analyze
       - name: Run Flutter Analyze
