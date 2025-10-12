@@ -7,7 +7,7 @@ on:
     branches: [develop, main]
 
 env:
-  FLUTTER_VERSION: "3.24.x"
+  FLUTTER_VERSION: "3.22.2"
   DENO_VERSION: "v1.x"
 
 jobs:
