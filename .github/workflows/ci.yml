@@ -62,6 +62,9 @@ jobs:
         working-directory: infra
         env:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          SUPABASE_URL: http://127.0.0.1:54321
+          SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           set -e
           supabase db reset --local --no-seed
