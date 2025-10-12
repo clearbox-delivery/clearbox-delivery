@@ -84,17 +84,11 @@ jobs:
       - name: Generate code (build_runner)
         run: melos run build:runner
 
-      # Unit Tests
+      # ✅ 修正這裡：必須用 melos exec 執行，否則 test context 錯誤
       - name: Run Dart/Flutter Unit Tests
         run: |
           set -e
-          cd packages/geo_h3
-          flutter test
-          cd ../domain
-          flutter test
-          cd ../../tests/unit
-          dart test
-          cd ../..
+          melos exec -c 1 --scope="supabase_client" -- dart test
 
       # Integration Tests（需要 SUPABASE_URL/ANON_KEY）
       - name: Run Integration Tests

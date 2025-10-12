@@ -15,8 +15,10 @@ dependencies:
     path: ../../packages/core_data
   riverpod: ^2.5.1
   flutter_riverpod: ^2.5.1
+  test: ^1.25.0
 
 dev_dependencies:
   flutter_lints: ^4.0.0
   flutter_test:
     sdk: flutter
+  test: ^1.25.0
