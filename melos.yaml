@@ -48,3 +48,11 @@ scripts:
     run: melos exec -c 1 --scope="core_data,customer_app" -- dart run build_runner build --delete-conflicting-outputs
     description: Run build_runner only for packages that use code generation
 
+  test:flutter:
+    run: melos exec --flutter --dir-exists="test" -c 1 -- flutter test --no-pub --coverage
+    description: Run Flutter tests in Flutter packages that contain a test/ folder
+
+  test:dart:
+    run: melos exec --no-flutter --dir-exists="test" -c 1 -- dart test
+    description: Run Dart tests in non-Flutter packages that contain a test/ folder
+
