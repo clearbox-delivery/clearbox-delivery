@@ -68,3 +68,5 @@ tests/api/newman-report.xml
 
 # Melos
 .melos_tool/
+
+**/pubspec_overrides.yaml

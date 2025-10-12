@@ -2,14 +2,14 @@ name: clearbox_delivery
 repository: https://github.com/yourorg/clearbox-delivery
 
 packages:
-  - apps/**
-  - packages/**
+  - apps/*
+  - packages/*
+  - '!**/build/**'
+  - '!**/.dart_tool/**'
 
-command:
-  bootstrap:
-    environment:
-      sdk: ">=3.0.0 <4.0.0"
-      flutter: ">=3.24.0"
+bootstrap:
+  runPubGetInParallel: true
+  enforceLockstepSdk: false   # 禁止自動修改子 package SDK 約束
 
 scripts:
   analyze:

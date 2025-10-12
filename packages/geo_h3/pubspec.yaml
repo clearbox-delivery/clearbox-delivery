@@ -4,12 +4,10 @@ version: 0.1.0
 publish_to: none
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
-
-resolution: workspace
+  sdk: ">=3.4.0 <3.5.0"
 
 dependencies:
-  h3_dart: ^0.7.0
+  h3_dart: ^0.6.0
   latlong2: ^0.9.0
 
 dev_dependencies:

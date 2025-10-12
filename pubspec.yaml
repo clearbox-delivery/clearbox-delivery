@@ -2,21 +2,8 @@ name: clearbox_delivery
 publish_to: none
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
-  flutter: ">=3.24.0"
-
-workspace:
-  # apps
-  - apps/courier_app
-  - apps/customer_app
-  - apps/merchant_app
-
-  # packages
-  - packages/core_data
-  - packages/core_ui
-  - packages/domain
-  - packages/geo_h3
-  - packages/supabase_client
+  sdk: ">=3.4.0 <3.5.0"
+  flutter: ">=3.22.0 <3.23.0"
 
 dev_dependencies:
-  melos: ^7.1.1
+  melos: ^6.2.0

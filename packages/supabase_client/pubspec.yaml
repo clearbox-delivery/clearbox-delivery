@@ -4,17 +4,15 @@ version: 0.1.0
 publish_to: none
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
-  flutter: ">=3.24.0"
-
-resolution: workspace
+  sdk: ">=3.4.0 <3.5.0"
+  flutter: ">=3.22.0 <3.23.0"
 
 dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: ^2.5.0
   core_data:
-    path: ../core_data
+    path: ../../packages/core_data
   riverpod: ^2.5.1
   flutter_riverpod: ^2.5.1
 
@@ -22,5 +20,3 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   flutter_test:
     sdk: flutter
-
-

@@ -4,15 +4,13 @@ version: 0.1.0
 publish_to: none
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
-
-resolution: workspace
+  sdk: ">=3.4.0 <3.5.0"
 
 dependencies:
   core_data:
-    path: ../core_data
+    path: ../../packages/core_data
   geo_h3:
-    path: ../geo_h3
+    path: ../../packages/geo_h3
   latlong2: ^0.9.0
 
 dev_dependencies:
