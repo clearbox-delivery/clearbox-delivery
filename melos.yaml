@@ -24,13 +24,13 @@ scripts:
     run: melos exec -c 1 --fail-fast -- flutter test --no-pub --coverage
     description: Run Flutter tests for all packages
 
-  test\:unit:
+  "test:unit":
     run: flutter test tests/unit
     description: Run unit tests
     exec:
       concurrency: 1
 
-  test\:integration:
+  "test:integration":
     run: flutter test tests/integration
     description: Run integration tests
     exec:
@@ -44,6 +44,6 @@ scripts:
     run: melos exec -c 1 -- flutter pub get
     description: Get dependencies for all packages
 
-  build\:runner:
+  "build:runner":
     run: melos exec -c 1 -- dart run build_runner build --delete-conflicting-outputs
     description: Run build_runner for code generation
