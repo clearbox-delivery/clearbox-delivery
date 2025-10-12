@@ -2,7 +2,8 @@ name: clearbox_delivery
 publish_to: none
 
 environment:
-  sdk: ^3.9.0
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
 
 workspace:
   # apps
