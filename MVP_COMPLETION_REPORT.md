@@ -44,12 +44,12 @@
   - 外送费自订 (30-5000)
   - 实时价格验证
   - 订单备注
-  
+
 - ✅ 商家选择 [REQ-CUST-SORT-001]
   - 商家列表展示
   - 距离+评价排序
   - H3 k=40 范围筛选
-  
+
 - ✅ 菜单浏览
   - 分类展示
   - 数量选择
@@ -112,14 +112,14 @@
   - orders (订单主表)
   - order_events (审计追踪)
   - merchants, couriers, customers
-  
+
 - ✅ 认证表
   - user_devices (设备管理)
   - otp_rate_limits (速率限制)
   - otp_verifications (OTP 记录)
   - user_profiles (用户配置)
   - documents (证件管理)
-  
+
 - ✅ 业务表
   - menu_items (菜单品项)
   - merchant_hours (营业时间)
@@ -137,17 +137,17 @@
   - create_order
   - merchant_confirm_order
   - accept_order
-  
+
 - ✅ **认证系统**
   - send_otp
   - verify_otp
   - upsert_user_profile
-  
+
 - ✅ **菜单管理**
   - create_menu_item
   - update_menu_item
   - delete_menu_item
-  
+
 - ✅ **位置服务**
   - update_courier_location
   - calculate_h3_heat
@@ -587,11 +587,11 @@ Database: postgres
 
 所有 13 个 REQ 均已实现并通过测试，UI 完全遵循设计规范，代码质量达到生产级别，文档完整详细。
 
-**状态**: ✅ **完成并就绪**  
-**完成日期**: 2024-01-XX  
-**REQ 完成度**: 13/13 (100%)  
-**测试通过率**: 100%  
-**代码质量**: 优秀  
+**状态**: ✅ **完成并就绪**
+**完成日期**: 2024-01-XX
+**REQ 完成度**: 13/13 (100%)
+**测试通过率**: 100%
+**代码质量**: 优秀
 
 ---
 
