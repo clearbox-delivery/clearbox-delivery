@@ -160,9 +160,9 @@ class _OrderPriorityCard extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: DesignTokens.sp3),
-          
+
           Row(
             children: [
               const Icon(
@@ -195,9 +195,9 @@ class _OrderPriorityCard extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: DesignTokens.sp2),
-          
+
           Text(
             '${order.items.length} 項商品',
             style: const TextStyle(

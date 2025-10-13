@@ -263,9 +263,9 @@ class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: DesignTokens.sp4),
-              
+
               // Order Info
               Text(
                 '訂單編號: ${widget.order.id.substring(0, 8)}',
@@ -274,9 +274,9 @@ class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
                   color: DesignTokens.textSecondary,
                 ),
               ),
-              
+
               const SizedBox(height: DesignTokens.sp2),
-              
+
               Text(
                 '外送費: NT\$${widget.order.deliveryPriceUserSet}',
                 style: const TextStyle(
@@ -285,9 +285,9 @@ class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
                   color: DesignTokens.textPrimary,
                 ),
               ),
-              
+
               const SizedBox(height: DesignTokens.sp6),
-              
+
               // Items
               const Text(
                 '商品明細',
@@ -297,9 +297,9 @@ class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
                   color: DesignTokens.textPrimary,
                 ),
               ),
-              
+
               const SizedBox(height: DesignTokens.sp3),
-              
+
               ...widget.order.items.map((item) => Padding(
                 padding: const EdgeInsets.only(bottom: DesignTokens.sp2),
                 child: Row(
@@ -322,19 +322,19 @@ class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
                   ],
                 ),
               )),
-              
+
               if (widget.order.status == OrderStatus.pendingStoreConfirm) ...[
                 const SizedBox(height: DesignTokens.sp6),
-                
+
                 CBInput(
                   label: '準備時間 (分鐘)',
                   controller: _prepTimeController,
                   keyboardType: TextInputType.number,
                   hintText: '例如: 15',
                 ),
-                
+
                 const SizedBox(height: DesignTokens.sp6),
-                
+
                 CBButton(
                   text: '確認訂單',
                   onPressed: _isLoading ? null : _confirmOrder,

@@ -52,10 +52,10 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
 
     try {
       final orderService = ref.read(orderServiceProvider);
-      
+
       // TODO: 实际应从店家选择页面获取
       const merchantId = '00000000-0000-0000-0000-000000000002';
-      
+
       await orderService.createOrder(
         merchantId: merchantId,
         items: [
@@ -151,9 +151,9 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: DesignTokens.sp6),
-            
+
             // 备注
             CBCard(
               child: Column(
@@ -176,9 +176,9 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: DesignTokens.sp8),
-            
+
             // 提交按钮
             CBButton(
               text: '建立訂單',
