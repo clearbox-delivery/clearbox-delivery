@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "🧪 Running Newman API tests..."
+echo "Running Newman API tests..."
 
 newman run tests/api/clearbox.postman_collection.json \
   -e tests/api/env.test.json \
@@ -10,6 +10,6 @@ newman run tests/api/clearbox.postman_collection.json \
   --bail \
   --color on
 
-echo "✅ API tests complete!"
+echo "API tests complete!"
 
 
