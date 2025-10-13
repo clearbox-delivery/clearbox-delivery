@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 完整的 RLS 测试 - 使用真实 JWT
 /// [TC-RLS-001~006]
-/// 
+///
 /// 运行前需要先生成 JWT tokens:
 /// deno run -A scripts/generate_test_jwts.ts
 void main() {
