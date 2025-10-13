@@ -4,8 +4,10 @@ import 'package:core_data/core_data.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:supabase_client/supabase_client.dart';
 
-/// Current orders page with 4 tabs and real-time updates
-/// [REQ-MER-CO-001, REQ-MER-CO-002] Confirm orders, ≤2s visibility
+/// 商家当前订单页面 - 4个标签页
+/// [REQ-MER-CO-001] 商家确认订单 → WAITING_COURIER
+/// [REQ-MER-CO-002] 2秒内实时更新
+/// [UI_GUIDELINES.md] Tabs 底线式，Design Tokens
 class CurrentOrdersPage extends ConsumerStatefulWidget {
   const CurrentOrdersPage({super.key});
 
@@ -36,21 +38,25 @@ class _CurrentOrdersPageState extends ConsumerState<CurrentOrdersPage>
 
     if (merchantId == null) {
       return const Scaffold(
-        body: Center(child: Text('Please login')),
+        body: Center(child: Text('請先登入')),
       );
     }
 
     return Scaffold(
+      backgroundColor: DesignTokens.bg,
       appBar: AppBar(
-        title: const Text('Current Orders'),
+        title: const Text('當前訂單'),
         bottom: TabBar(
           controller: _tabController,
-          isScrollable: true,
+          labelColor: DesignTokens.textPrimary,
+          unselectedLabelColor: DesignTokens.textSecondary,
+          indicatorColor: DesignTokens.brand,
+          indicatorWeight: 2,
           tabs: const [
-            Tab(text: '待确认'),
-            Tab(text: '待接单'),
-            Tab(text: '备餐中'),
-            Tab(text: '已取餐'),
+            Tab(text: '待確認'),
+            Tab(text: '待接單'),
+            Tab(text: '準備中'),
+            Tab(text: '待取貨'),
           ],
         ),
       ),
@@ -90,6 +96,7 @@ class _OrdersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // [REQ-MER-CO-002] 实时更新
     final ordersStream = ref.watch(merchantOrdersStreamProvider(
       MerchantOrdersQuery(merchantId: merchantId, status: status),
     ));
@@ -97,34 +104,55 @@ class _OrdersTab extends ConsumerWidget {
     return ordersStream.when(
       data: (orders) {
         if (orders.isEmpty) {
-          return const Center(child: Text('No orders'));
+          return CBEmptyState(
+            icon: Icons.receipt_long_outlined,
+            title: '目前沒有訂單',
+            description: status == OrderStatus.pendingStoreConfirm
+                ? '新訂單會在此顯示'
+                : null,
+          );
         }
 
+        // [REQ-MER-CO-002] SafeListAnimation 防误触
         return SafeOrderList(
           orders: orders,
-          itemBuilder: (order) => OrderCard(
-            key: Key('order-card-${order.id}'),
-            order: order,
-            showHighlight: _isNewOrder(order),
-            onTap: () => _showOrderDetail(context, ref, order),
-          ),
+          itemBuilder: (order) {
+            final isNew = _isNewOrder(order);
+            return OrderCard(
+              key: Key('order-card-${order.id}'),
+              order: order,
+              showHighlight: isNew,
+              onTap: () => _showOrderDetail(context, ref, order),
+            );
+          },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error: $error')),
+      loading: () => const Center(
+        child: CBLoadingIndicator(),
+      ),
+      error: (error, stack) => CBErrorState(
+        title: '載入失敗',
+        description: error.toString(),
+        actionLabel: '重試',
+        onAction: () {
+          ref.invalidate(merchantOrdersStreamProvider);
+        },
+      ),
     );
   }
 
+  /// [REQ-MER-CO-002] 新订单高亮 5 秒
   bool _isNewOrder(Order order) {
     final now = DateTime.now();
     final diff = now.difference(order.createdAt);
-    return diff.inSeconds <= 5; // Highlight for 5 seconds
+    return diff.inSeconds <= 5;
   }
 
   void _showOrderDetail(BuildContext context, WidgetRef ref, Order order) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => _OrderDetailSheet(order: order),
     );
   }
@@ -149,12 +177,11 @@ class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
     super.dispose();
   }
 
+  /// [REQ-MER-CO-001] 商家确认订单
   Future<void> _confirmOrder() async {
     final prepTime = int.tryParse(_prepTimeController.text);
     if (prepTime == null || prepTime <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter valid prep time')),
-      );
+      _showError('請輸入有效的準備時間');
       return;
     }
 
@@ -165,20 +192,21 @@ class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
       await orderService.merchantConfirmOrder(
         orderId: widget.order.id,
         prepTimeMinutes: prepTime,
-        merchantNotes: 'Confirmed',
+        merchantNotes: '已確認',
       );
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order confirmed')),
+          const SnackBar(
+            content: Text('訂單已確認'),
+            backgroundColor: DesignTokens.accent,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to confirm: $e')),
-        );
+        _showError('確認失敗: $e');
       }
     } finally {
       if (mounted) {
@@ -187,68 +215,138 @@ class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
     }
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: DesignTokens.danger,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: ListView(
-            controller: scrollController,
+    return Container(
+      decoration: const BoxDecoration(
+        color: DesignTokens.bg,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.radiusLg),
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: DesignTokens.sp6,
+            right: DesignTokens.sp6,
+            top: DesignTokens.sp6,
+            bottom: MediaQuery.of(context).viewInsets.bottom + DesignTokens.sp6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Order Details',
-                style: Theme.of(context).textTheme.headlineSmall,
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '訂單詳情',
+                    style: TextStyle(
+                      fontSize: DesignTokens.fsXl,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textPrimary,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
               
-              Text('Order ID: ${widget.order.id.substring(0, 8)}'),
-              Text('Delivery Fee: NT\$${widget.order.deliveryPriceUserSet}'),
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.sp4),
               
-              const Text('Items:', style: TextStyle(fontWeight: FontWeight.bold)),
-              ...widget.order.items.map((item) => ListTile(
-                title: Text(item.name),
-                subtitle: Text('Qty: ${item.quantity}'),
-                trailing: Text('NT\$${item.unitPrice}'),
+              // Order Info
+              Text(
+                '訂單編號: ${widget.order.id.substring(0, 8)}',
+                style: const TextStyle(
+                  fontSize: DesignTokens.fsSm,
+                  color: DesignTokens.textSecondary,
+                ),
+              ),
+              
+              const SizedBox(height: DesignTokens.sp2),
+              
+              Text(
+                '外送費: NT\$${widget.order.deliveryPriceUserSet}',
+                style: const TextStyle(
+                  fontSize: DesignTokens.fsMd,
+                  fontWeight: FontWeight.w600,
+                  color: DesignTokens.textPrimary,
+                ),
+              ),
+              
+              const SizedBox(height: DesignTokens.sp6),
+              
+              // Items
+              const Text(
+                '商品明細',
+                style: TextStyle(
+                  fontSize: DesignTokens.fsMd,
+                  fontWeight: FontWeight.w600,
+                  color: DesignTokens.textPrimary,
+                ),
+              ),
+              
+              const SizedBox(height: DesignTokens.sp3),
+              
+              ...widget.order.items.map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: DesignTokens.sp2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${item.name} x ${item.quantity}',
+                      style: const TextStyle(
+                        fontSize: DesignTokens.fsSm,
+                        color: DesignTokens.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'NT\$${item.unitPrice}',
+                      style: const TextStyle(
+                        fontSize: DesignTokens.fsSm,
+                        color: DesignTokens.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               )),
               
               if (widget.order.status == OrderStatus.pendingStoreConfirm) ...[
-                const SizedBox(height: 24),
-                TextField(
+                const SizedBox(height: DesignTokens.sp6),
+                
+                CBInput(
+                  label: '準備時間 (分鐘)',
                   controller: _prepTimeController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Prep Time (minutes)',
-                    hintText: 'e.g., 15',
-                  ),
+                  hintText: '例如: 15',
                 ),
-                const SizedBox(height: 16),
                 
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _confirmOrder,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Confirm Order'),
-                  ),
+                const SizedBox(height: DesignTokens.sp6),
+                
+                CBButton(
+                  text: '確認訂單',
+                  onPressed: _isLoading ? null : _confirmOrder,
+                  isLoading: _isLoading,
+                  type: CBButtonType.primary,
+                  size: CBButtonSize.large,
                 ),
               ],
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
-
-

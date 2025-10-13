@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:domain/domain.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:core_data/core_data.dart';
 
-/// New order page with price validation
-/// [REQ-CUST-ORDER-001] Customer sets delivery price
+/// 顾客下单页面
+/// [REQ-CUST-ORDER-001] 顾客自订外送费 (30-5000)
+/// [UI_GUIDELINES.md] 使用 Design Tokens
 class NewOrderPage extends ConsumerStatefulWidget {
   const NewOrderPage({super.key});
 
@@ -16,12 +18,14 @@ class NewOrderPage extends ConsumerStatefulWidget {
 
 class _NewOrderPageState extends ConsumerState<NewOrderPage> {
   final _priceController = TextEditingController();
+  final _notesController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void dispose() {
     _priceController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -30,11 +34,11 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
     final price = double.tryParse(priceText);
 
     if (price == null) {
-      setState(() => _errorMessage = 'Please enter a valid price');
+      setState(() => _errorMessage = '請輸入有效的金額');
       return;
     }
 
-    // Validate price [TC-CUST-001, TC-CUST-002]
+    // [REQ-CUST-ORDER-001] 价格验证
     final validation = PriceValidator.validate(price);
     if (!validation.isValid) {
       setState(() => _errorMessage = validation.message);
@@ -49,30 +53,36 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
     try {
       final orderService = ref.read(orderServiceProvider);
       
-      // Create order with sample data (MVP)
+      // TODO: 实际应从店家选择页面获取
+      const merchantId = '00000000-0000-0000-0000-000000000002';
+      
       await orderService.createOrder(
-        merchantId: 'mer-1', // TODO: Get from merchant selection
+        merchantId: merchantId,
         items: [
           const OrderItem(
             sku: 'bento-001',
-            name: 'Test Bento',
+            name: '招牌便當',
             quantity: 1,
             unitPrice: 100,
           ),
         ],
         deliveryPrice: price,
-        customerNotes: 'Test order',
+        customerNotes: _notesController.text.trim(),
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order created successfully')),
+          const SnackBar(
+            content: Text('訂單已建立'),
+            backgroundColor: DesignTokens.accent,
+          ),
         );
         _priceController.clear();
+        _notesController.clear();
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = 'Failed to create order: $e');
+        setState(() => _errorMessage = '建立訂單失敗: $e');
       }
     } finally {
       if (mounted) {
@@ -84,8 +94,9 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DesignTokens.bg,
       appBar: AppBar(
-        title: const Text('New Order'),
+        title: const Text('建立訂單'),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -93,50 +104,88 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(DesignTokens.sp6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Set Delivery Price',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            // 价格输入
+            CBCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '設定外送費',
+                    style: TextStyle(
+                      fontSize: DesignTokens.fsLg,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.sp2),
+                  Text(
+                    '最低 NT\$${PriceValidator.minDeliveryPrice.toInt()}，'
+                    '最高 NT\$${PriceValidator.maxDeliveryPrice.toInt()}',
+                    style: const TextStyle(
+                      fontSize: DesignTokens.fsSm,
+                      color: DesignTokens.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.sp4),
+                  CBInput(
+                    controller: _priceController,
+                    hintText: '輸入金額',
+                    keyboardType: TextInputType.number,
+                    errorText: _errorMessage,
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.all(DesignTokens.sp3),
+                      child: Text(
+                        'NT\$',
+                        style: TextStyle(
+                          fontSize: DesignTokens.fsMd,
+                          color: DesignTokens.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Min: NT\$${PriceValidator.minDeliveryPrice.toInt()}, '
-              'Max: NT\$${PriceValidator.maxDeliveryPrice.toInt()}',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 16),
             
-            TextField(
-              controller: _priceController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Delivery Price (NT\$)',
-                hintText: 'Enter amount',
-                errorText: _errorMessage,
-                prefixText: 'NT\$ ',
+            const SizedBox(height: DesignTokens.sp6),
+            
+            // 备注
+            CBCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '訂單備註',
+                    style: TextStyle(
+                      fontSize: DesignTokens.fsLg,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.sp4),
+                  CBInput(
+                    controller: _notesController,
+                    hintText: '例如：不要辣、過敏原等',
+                    maxLines: 3,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
             
-            ElevatedButton(
+            const SizedBox(height: DesignTokens.sp8),
+            
+            // 提交按钮
+            CBButton(
+              text: '建立訂單',
               onPressed: _isLoading ? null : _handleCreateOrder,
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Create Order'),
+              isLoading: _isLoading,
+              type: CBButtonType.primary,
+              size: CBButtonSize.large,
             ),
           ],
         ),
@@ -146,25 +195,32 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
   }
 
   Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 0,
-      onTap: (index) {
-        if (index == 1) {
-          context.go('/history');
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.add_shopping_cart),
-          label: 'New Order',
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: DesignTokens.border),
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.history),
-          label: 'History',
-        ),
-      ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: 0,
+        selectedItemColor: DesignTokens.brand,
+        unselectedItemColor: DesignTokens.textSecondary,
+        onTap: (index) {
+          if (index == 1) {
+            context.go('/history');
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_shopping_cart),
+            label: '新訂單',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: '歷史',
+          ),
+        ],
+      ),
     );
   }
 }
-
-
