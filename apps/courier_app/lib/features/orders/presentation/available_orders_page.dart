@@ -4,10 +4,12 @@ import 'package:core_data/core_data.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:domain/domain.dart';
+import 'package:courier_app/features/heat/presentation/heat_map_widget.dart';
 
 /// 外送员可接订单页面
 /// [REQ-COU-MATCH-003] 原子性接单
 /// [REQ-COU-SORT-001] R/T 优先级排序
+/// [REQ-COU-HEAT-001] 供需热度地图
 /// [UI_GUIDELINES.md] Design Tokens
 class AvailableOrdersPage extends ConsumerWidget {
   const AvailableOrdersPage({super.key});
@@ -27,7 +29,21 @@ class AvailableOrdersPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: _buildBody(context, ref),
+      body: Column(
+        children: [
+          // [REQ-COU-HEAT-001] 热度地图
+          const Padding(
+            padding: EdgeInsets.all(DesignTokens.sp4),
+            child: HeatMapWidget(
+              currentH3Cell: '8a1234567890abc', // TODO: 从GPS获取
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _buildBody(context, ref),
+          ),
+        ],
+      ),
     );
   }
 

@@ -118,12 +118,12 @@ T = max(travel_time, prep_time) + delivery_time
   - delivery_price_user_set (不可变) [REQ-CUST-ORDER-001]
   - status (状态机)
   - h3_merchant, h3_customer (地理)
-  
+
 - `order_events`: 审计追踪 [REQ-CORE-AUDIT-001]
   - actor_id, actor_type
   - from_status, to_status
   - event_type, metadata
-  
+
 - `merchants`, `couriers`, `customers`
 - `user_devices`, `otp_rate_limits` (认证)
 
@@ -167,7 +167,7 @@ T = max(travel_time, prep_time) + delivery_time
 
 #### E2E 测试
 - ✅ `tests/e2e/merchant_current_orders_test.dart` [TC-MER-E2E-001]
-- ✅ `apps/merchant_app/integration_test/` 
+- ✅ `apps/merchant_app/integration_test/`
 
 ### 7. CI/CD Pipeline
 
@@ -304,7 +304,7 @@ flutter test integration_test/
 
 1. **认证系统未完成**
    - [ ] Email OTP Edge Function
-   - [ ] Phone OTP Edge Function  
+   - [ ] Phone OTP Edge Function
    - [ ] 设备指纹验证
    - [ ] 速率限制实现
    - 当前使用简单 email/password，API 测试设为 continue-on-error

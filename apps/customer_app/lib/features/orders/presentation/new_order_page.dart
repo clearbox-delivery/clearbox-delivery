@@ -5,6 +5,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:domain/domain.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:core_data/core_data.dart';
+import 'package:customer_app/features/merchants/presentation/merchant_list_page.dart';
 
 /// 顾客下单页面
 /// [REQ-CUST-ORDER-001] 顾客自订外送费 (30-5000)
@@ -109,6 +110,39 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // 选择商家按钮
+            CBButton(
+              text: '選擇商家',
+              icon: Icons.store,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MerchantListPage(),
+                  ),
+                );
+              },
+              size: CBButtonSize.large,
+            ),
+            
+            const SizedBox(height: DesignTokens.sp6),
+            
+            const Divider(),
+            
+            const SizedBox(height: DesignTokens.sp6),
+            
+            // 快速下单 (MVP 简化版)
+            const Text(
+              '快速下單',
+              style: TextStyle(
+                fontSize: DesignTokens.fsLg,
+                fontWeight: FontWeight.w600,
+                color: DesignTokens.textPrimary,
+              ),
+            ),
+            
+            const SizedBox(height: DesignTokens.sp4),
+            
             // 价格输入
             CBCard(
               child: Column(
@@ -117,7 +151,7 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
                   const Text(
                     '設定外送費',
                     style: TextStyle(
-                      fontSize: DesignTokens.fsLg,
+                      fontSize: DesignTokens.fsMd,
                       fontWeight: FontWeight.w600,
                       color: DesignTokens.textPrimary,
                     ),
