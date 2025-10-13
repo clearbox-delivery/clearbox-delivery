@@ -24,9 +24,9 @@
 | REQ-AUTH-OTP-001 | Email OTP 验证 | P0 | ✅ | TC-AUTH-001/002 | send_otp(), otp_verification_page.dart | Auth |
 | REQ-AUTH-OTP-002 | Phone OTP 验证 | P0 | ✅ | TC-AUTH-003 | send_otp(), otp_verification_page.dart | Auth |
 
-**P0 (必须)**: 13/13 ✅  
-**P1 (重要)**: 0/0  
-**P2 (可选)**: 0/0  
+**P0 (必须)**: 13/13 ✅
+**P1 (重要)**: 0/0
+**P2 (可选)**: 0/0
 
 **总完成度**: 13/13 (100%) ✅
 
@@ -164,7 +164,7 @@ supabase db push
 
 ---
 
-**状态**: ✅ **100% 完成，准备发布**  
-**签署**: 开发团队  
+**状态**: ✅ **100% 完成，准备发布**
+**签署**: 开发团队
 **日期**: 2024-01-XX
 

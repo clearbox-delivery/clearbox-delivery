@@ -255,10 +255,10 @@ dart test tests/unit/pricing_test.dart -n "Valid delivery price"
 
 项目可以进入生产环境部署，所有功能正常运行，代码质量达到生产级别。
 
-**状态**: ✅ **已完成，准备发布**  
-**提交分支**: `develop`  
-**目标分支**: `main`  
-**提交记录**: 15+ commits  
+**状态**: ✅ **已完成，准备发布**
+**提交分支**: `develop`
+**目标分支**: `main`
+**提交记录**: 15+ commits
 
 ---
 
