@@ -204,9 +204,9 @@ flutter run ...
 
 ---
 
-**PR 状态**: ✅ **准备就绪**  
-**Reviewer**: 请验证后批准  
-**Target**: `main` 分支  
+**PR 状态**: ✅ **准备就绪**
+**Reviewer**: 请验证后批准
+**Target**: `main` 分支
 
 **Let's ship it!** 🚀
 
