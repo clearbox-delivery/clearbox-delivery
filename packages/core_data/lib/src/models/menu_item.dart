@@ -24,7 +24,7 @@ class MenuItem with _$MenuItem {
     @JsonKey(name: 'updated_at') DateTime? updatedAt,
   }) = _MenuItem;
 
-  factory MenuItem.fromJson(Map<String, dynamic> json) => 
+  factory MenuItem.fromJson(Map<String, dynamic> json) =>
     _$MenuItemFromJson(json);
 }
 
@@ -42,7 +42,7 @@ class UserProfile with _$UserProfile {
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _UserProfile;
 
-  factory UserProfile.fromJson(Map<String, dynamic> json) => 
+  factory UserProfile.fromJson(Map<String, dynamic> json) =>
     _$UserProfileFromJson(json);
 }
 
@@ -55,7 +55,7 @@ class H3Heat with _$H3Heat {
     @JsonKey(name: 'heat_score') required double heatScore,
   }) = _H3Heat;
 
-  factory H3Heat.fromJson(Map<String, dynamic> json) => 
+  factory H3Heat.fromJson(Map<String, dynamic> json) =>
     _$H3HeatFromJson(json);
 }
 

@@ -81,6 +81,35 @@ class _CurrentOrdersPageState extends ConsumerState<CurrentOrdersPage>
           ),
         ],
       ),
+      bottomNavigationBar: _buildBottomNav(context),
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: DesignTokens.border)),
+      ),
+      child: BottomNavigationBar(
+        currentIndex: 0,
+        selectedItemColor: DesignTokens.brand,
+        unselectedItemColor: DesignTokens.textSecondary,
+        onTap: (index) {
+          if (index == 1) {
+            Navigator.pushNamed(context, '/menu');
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
+            label: '當前訂單',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.restaurant_menu),
+            label: '菜單管理',
+          ),
+        ],
+      ),
     );
   }
 }

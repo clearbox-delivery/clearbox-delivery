@@ -75,11 +75,11 @@ class _MenuBrowsePageState extends ConsumerState<MenuBrowsePage> {
 
     try {
       final orderService = ref.read(orderServiceProvider);
-      
+
       // 构建订单项目
       final menuService = ref.read(menuServiceProvider);
       final allItems = await menuService.getMerchantMenu(widget.merchant.id);
-      
+
       final orderItems = _selectedItems.entries.map((entry) {
         final item = allItems.firstWhere((i) => i.id == entry.key);
         return OrderItem(
@@ -204,7 +204,7 @@ class _MenuBrowsePageState extends ConsumerState<MenuBrowsePage> {
                   },
                 ),
               ),
-              
+
               // 底部购物车
               if (_selectedItems.isNotEmpty)
                 Container(

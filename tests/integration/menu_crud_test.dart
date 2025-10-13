@@ -45,7 +45,7 @@ void main() {
       expect(result, isNotNull);
       expect(result['name'], equals('测试餐点'));
       expect(result['price'], equals(99.0));
-      
+
       testItemIds.add(result['id'] as String);
     });
 

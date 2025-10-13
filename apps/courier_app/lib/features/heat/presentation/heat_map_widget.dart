@@ -53,7 +53,7 @@ class HeatMapWidget extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: DesignTokens.sp4),
-              
+
               // 热度图例
               Row(
                 children: [
@@ -65,7 +65,7 @@ class HeatMapWidget extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: DesignTokens.sp4),
-              
+
               // 热度网格 (简化版本 - 显示附近几个格子)
               SizedBox(
                 height: 120,
@@ -82,7 +82,7 @@ class HeatMapWidget extends ConsumerWidget {
                     if (index >= heatData.length) {
                       return const SizedBox();
                     }
-                    
+
                     final heat = heatData[index];
                     final normalizedHeat = maxHeat > 0
                         ? heat.heatScore / maxHeat

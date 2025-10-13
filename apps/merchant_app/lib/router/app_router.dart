@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:merchant_app/features/auth/presentation/login_page.dart';
 import 'package:merchant_app/features/orders/presentation/current_orders_page.dart';
+import 'package:merchant_app/features/menu/presentation/menu_management_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(currentUserProvider);
@@ -33,8 +34,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/current-orders',
         builder: (context, state) => const CurrentOrdersPage(),
       ),
+      GoRoute(
+        path: '/menu',
+        builder: (context, state) => const MenuManagementPage(),
+      ),
     ],
   );
 });
-
-

@@ -356,27 +356,27 @@ class _MenuItemFormState extends ConsumerState<_MenuItemForm> {
                   ),
                 ),
                 const SizedBox(height: DesignTokens.sp6),
-                
+
                 CBInput(label: '分類', controller: _categoryController),
                 const SizedBox(height: DesignTokens.sp4),
-                
+
                 CBInput(label: '餐點名稱', controller: _nameController),
                 const SizedBox(height: DesignTokens.sp4),
-                
+
                 CBInput(
                   label: '說明',
                   controller: _descController,
                   maxLines: 3,
                 ),
                 const SizedBox(height: DesignTokens.sp4),
-                
+
                 CBInput(
                   label: '價格',
                   controller: _priceController,
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: DesignTokens.sp4),
-                
+
                 if (widget.item != null) ...[
                   Row(
                     children: [
@@ -392,9 +392,9 @@ class _MenuItemFormState extends ConsumerState<_MenuItemForm> {
                   ),
                   const SizedBox(height: DesignTokens.sp4),
                 ],
-                
+
                 const SizedBox(height: DesignTokens.sp6),
-                
+
                 CBButton(
                   text: '儲存',
                   onPressed: _isLoading ? null : _handleSave,

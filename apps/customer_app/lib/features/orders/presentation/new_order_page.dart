@@ -124,13 +124,13 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
               },
               size: CBButtonSize.large,
             ),
-            
+
             const SizedBox(height: DesignTokens.sp6),
-            
+
             const Divider(),
-            
+
             const SizedBox(height: DesignTokens.sp6),
-            
+
             // 快速下单 (MVP 简化版)
             const Text(
               '快速下單',
@@ -140,9 +140,9 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
                 color: DesignTokens.textPrimary,
               ),
             ),
-            
+
             const SizedBox(height: DesignTokens.sp4),
-            
+
             // 价格输入
             CBCard(
               child: Column(

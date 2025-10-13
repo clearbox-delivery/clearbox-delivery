@@ -36,7 +36,7 @@ BEGIN
 
   IF v_rate_limit IS NOT NULL THEN
     -- 检查是否被锁定
-    IF v_rate_limit.lock_until IS NOT NULL 
+    IF v_rate_limit.lock_until IS NOT NULL
        AND v_rate_limit.lock_until > NOW() THEN
       RAISE EXCEPTION 'ERR_RATE_LIMIT: Device locked until %', v_rate_limit.lock_until;
     END IF;
@@ -46,14 +46,14 @@ BEGIN
       UPDATE otp_rate_limits
       SET lock_until = NOW() + INTERVAL '24 hours'
       WHERE identifier = p_device_id;
-      
+
       RAISE EXCEPTION 'ERR_MAX_ATTEMPTS: Maximum attempts exceeded';
     END IF;
 
     -- 检查冷却时间
     IF v_rate_limit.last_attempt_at IS NOT NULL
        AND v_rate_limit.last_attempt_at + (v_cooldown_seconds || ' seconds')::INTERVAL > NOW() THEN
-      RAISE EXCEPTION 'ERR_COOLDOWN: Please wait % seconds', 
+      RAISE EXCEPTION 'ERR_COOLDOWN: Please wait % seconds',
         v_cooldown_seconds - EXTRACT(EPOCH FROM (NOW() - v_rate_limit.last_attempt_at));
     END IF;
 

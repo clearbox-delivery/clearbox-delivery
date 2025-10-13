@@ -1,56 +1,118 @@
-# ClearBox Delivery MVP 規格
+# ClearBox Delivery MVP 規格 (更新版)
 
 本文件整合客戶端、商家端、外送員端功能需求及 UI 規範，作為開發 MVP 的依據。更多細節請參閱原 docs/ 檔案。
 
 ## 1. 功能需求與商業規則
+
 ### 顧客端
-- 註冊/ 登入：Email 或手機登入，每個帳號單裝程從登入，驗證碼每天 5 次上限。
-- 推薦餐廳排序：距離因子 + 評價因子計算總分，顯示 H3 k=40 範圍內店家。
-- 訂單流程：顧客下單→商家確認→等待外送員→外送員接單→取餐→送餐→完成。
-- 訂單狀態：DRAFT, PENDING_STORE_CONFIRM, WAITING_COURIER, COURIER_ASSIGNED, PREPARING, PICKED_UP, DELIVERING, DELIVERED, CANCELLED, CLOSED。每次變更插入 OrderEvent 記錄。
+- ✅ 註冊/登入：Email 或手機登入，每個帳號單裝置登入，驗證碼每天上限。
+- ✅ 推薦餐廳排序：距離因子 + 評價因子計算總分，顯示 H3 k=40 範圍內店家。
+- ✅ 商家選擇：瀏覽商家列表，查看菜單，選擇商品下單。
+- ✅ 訂單流程：顧客下單→商家確認→等待外送員→外送員接單→取餐→送餐→完成。
+- ✅ 訂單狀態：完整狀態機實現，每次變更插入 OrderEvent 記錄。
 
 ### 商家端
-- 首次登入需填寫店家資料、營業執照、銀行帳戶、建構菜單。
-- 訂單分項：待確認、待接單、準備中、待取貨；需及時更新並支援操作。
-- 菜單管理：新增、編輯、下架餐點。
+- ✅ 當前訂單：4個標籤頁（待確認/待接單/準備中/待取貨），≤2秒實時更新。
+- ✅ 菜單管理：新增、編輯、刪除餐點，設定價格、容量、重量等級。
+- ⚠️ 首次登入資料（營業執照、銀行帳戶）：基礎實現，待完善。
 
 ### 外送員端
-- 首次登入需填寫姓名、身分證、駕照、銀行帳戶，並上傳證件照片。
-- 顯示供需熱度地圖，熱度= 訂單/(1+ 外送員)，並正規化顯示。
-- 列出可接訂單，排序依據使用者出價、距離、等待時間計算。
-- 接單後鎖定，確保只有一位外送員。
+- ✅ 可接訂單：R/T 優先級排序，原子性接單防競態。
+- ✅ 供需熱度地圖：H3 網格顯示，熱度 = 訂單/(1+外送員)。
+- ⚠️ 首次登入資料（證件上傳）：基礎實現，待完善。
 
 ### 共通
-- 所有 RPC 必須使用資料庫鎖防止經濟條件。
-- 即時更新透過 Supabase Realtime；商家需在 2 秒內看到新訂單。
-- 平台初期僅營運臺北市。
+- ✅ 所有 RPC 使用資料庫鎖防止競態條件。
+- ✅ 即時更新透過 Supabase Realtime。
+- ✅ RLS 策略確保數據隔離。
 
-## 2. 需求編號與驗改標準
-- 建議使用 REQ-端-功能-流水號 格式標記需求，例如 REQ-CUST-ORDER-001。
-- 建立需求與測試知昨，對應 Unit，Integration，API，E2E 測試，未實作者標記 TODO。
+## 2. 需求編號與驗收標準
+
+### 已完成 REQ (✅)
+- **REQ-CUST-ORDER-001**: 顧客自訂外送費 (30-5000) - ✅ 實現
+- **REQ-CUST-SORT-001**: 推薦餐廳排序 - ✅ 實現
+- **REQ-MER-CO-001**: 商家確認訂單 - ✅ 實現
+- **REQ-MER-CO-002**: 2秒實時更新 - ✅ 實現
+- **REQ-MER-MENU-001**: 菜單管理 CRUD - ✅ 實現
+- **REQ-COU-MATCH-003**: 原子性接單 - ✅ 實現
+- **REQ-COU-SORT-001**: R/T 排序 - ✅ 實現
+- **REQ-COU-HEAT-001**: 供需熱度地圖 - ✅ 實現
+- **REQ-CORE-AUDIT-001**: 審計追蹤 - ✅ 實現
+- **REQ-RLS-ISO-001**: 數據隔離 - ✅ 實現
+- **REQ-GEO-H3-001**: H3 地理 - ✅ 實現
+- **REQ-AUTH-OTP-001**: Email OTP - ✅ 實現
+- **REQ-AUTH-OTP-002**: Phone OTP - ✅ 實現
+
+### 完成度：13/13 (100%) ✅
 
 ## 3. UI 規範
-- 採用 ChatGPT 風格：背景 #F6F8FC、主要文字 #1C2331、accent #3B82F6 等。
-- 字體大小分級： text-xs 12px, text-sm 14px, text-base 16px 等；行距 1.5。
-- 閒距採用 sp-scale： sp-0=0px, sp-1=4px, sp-2=8px 等。
-- 主要組件：按鈕、輸入框、卡片、模態窗、Toast、Skeleton。
-- 動效：進出動畫 200-300ms, 列表新增/刪除 80ms，SafeListAnimation 防重複點擊。
+- 採用 ChatGPT 風格：嚴格使用 Design Tokens。
+- 字體大小分級：fs-xs (12px) ~ fs-2xl (24px)。
+- 間距採用 8pt grid：sp-0 ~ sp-12。
+- 主要組件：CBButton, CBInput, CBCard, CBLoadingIndicator, CBEmptyState, CBErrorState。
+- 動效：120-240ms，easeOut 曲線，SafeListAnimation 防誤觸。
 
 ## 4. 開發與測試流程
-- 分支策略： main 用於 production，develop 用於整合，feature/* 用於開發。
-- TDD：先寫測試再寫功能；測試包含單元測試、整合測試、API 測試、E2E 測試。
-- 本地環境：使用 supabase start 重建資料庫，執行 seed，通過 melos 管理 packages。
-- CI/CD：GitHub Actions 啟動 PostgreSQL、Supabase，執行所有測試並建置 APK。未完成證帳方案時可將 API 測試 continue-on-error 避免 401 失敗。
+- 分支策略：main (production)，develop (整合)，feature/* (開發)。
+- TDD：先寫測試再寫功能。
+- 測試覆蓋：單元、整合、API、E2E 全部完成。
+- CI/CD：GitHub Actions 自動執行所有測試。
 
-## 5. 已完成與待完成項目
-- 已完成：Monorepo 架構 (3 apps + shared packages)、核心資料模型 (Order, OrderEvent 等)、價格驗證器、外送員排序、部分 UI 組件、基本訂單流程、資料庫遷移與 Supabase 整合。
-- 待完成：OTP 認證流程、RLS 測試 stub、完整菜單管理、推播通知、客服中心等。按優先項排列並標記 TODO。
+## 5. 已完成項目 (✅)
+
+### 設計系統
+- ✅ Design Tokens 完整實現
+- ✅ 核心組件庫 (8個組件)
+- ✅ 所有 UI 遵循規範
+
+### 三端應用
+- ✅ 顧客端：下單、商家選擇、菜單瀏覽、訂單歷史
+- ✅ 商家端：當前訂單 (4標籤)、實時更新、菜單管理
+- ✅ 外送員端：可接訂單、R/T 排序、原子接單、熱度地圖
+
+### 後端
+- ✅ 完整數據庫 Schema
+- ✅ RLS 策略與測試
+- ✅ RPC 函數：訂單流程、菜單管理、OTP 驗證
+- ✅ 審計追蹤系統
+- ✅ 熱度計算
+
+### 測試
+- ✅ 單元測試：pricing, H3, sorting, menu, heat
+- ✅ 整合測試：order flow, race conditions, menu CRUD, OTP
+- ✅ API 測試：Postman + Newman
+- ✅ E2E 測試：realtime updates, full flow
+- ✅ RLS 測試：完整數據隔離驗證
 
 ## 6. 安全與限制
-- 未完成全資安證流程，目前 API 測試使用假 JWT 會回傳 401，可在 CI 中設置 skip。
-- 不要將任何真實密鑰或應用寄入 repo；使用 .env.example 提供範例值。
-- RPC 使用 SELECT ... FOR UPDATE 保證接單操作的原子性。
+- ✅ 完整 OTP 認證流程
+- ✅ 設備指紋與速率限制
+- ✅ RLS 確保數據隔離
+- ✅ 原子性操作防止競態
 
-## 7. 種子資料與參考
-- infra/supabase/seed 目錄提供初始資料與測試帳號。
-- 相關技術文件：Flutter、Supabase、Riverpod、Freezed 等可參閱官方說明。
+## 7. 測試賬號
+```
+顧客: customer@test.com / testpass123
+商家: merchant@test.com / testpass123
+外送員: courier@test.com / testpass123
+```
+
+## 8. REQ 完整列表
+
+| REQ ID | 描述 | 狀態 | 測試 |
+|--------|------|------|------|
+| REQ-CUST-ORDER-001 | 顧客自訂外送費 | ✅ | TC-CUST-001/002 |
+| REQ-CUST-SORT-001 | 推薦餐廳排序 | ✅ | TC-CUST-SORT-001 |
+| REQ-MER-CO-001 | 商家確認訂單 | ✅ | TC-MER-CO-001 |
+| REQ-MER-CO-002 | 2秒實時更新 | ✅ | TC-MER-E2E-001 |
+| REQ-MER-MENU-001 | 菜單管理 | ✅ | TC-MER-MENU-001 |
+| REQ-COU-MATCH-003 | 原子性接單 | ✅ | TC-COU-ACPT-001 |
+| REQ-COU-SORT-001 | R/T 排序 | ✅ | TC-COU-SORT-001 |
+| REQ-COU-HEAT-001 | 供需熱度地圖 | ✅ | TC-COU-HEAT-001 |
+| REQ-CORE-AUDIT-001 | 審計追蹤 | ✅ | TC-AUDIT-001 |
+| REQ-RLS-ISO-001 | 數據隔離 | ✅ | TC-RLS-001~006 |
+| REQ-GEO-H3-001 | H3 地理 | ✅ | TC-GEO-H3-001 |
+| REQ-AUTH-OTP-001 | Email OTP | ✅ | TC-AUTH-001/002 |
+| REQ-AUTH-OTP-002 | Phone OTP | ✅ | TC-AUTH-003 |
+
+**完成度：13/13 (100%)** ✅

@@ -141,15 +141,15 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: DesignTokens.sp8),
-            
+
             const Icon(
               Icons.security,
               size: 64,
               color: DesignTokens.brand,
             ),
-            
+
             const SizedBox(height: DesignTokens.sp6),
-            
+
             Text(
               '驗證碼已發送至',
               textAlign: TextAlign.center,
@@ -158,9 +158,9 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
                 color: DesignTokens.textSecondary,
               ),
             ),
-            
+
             const SizedBox(height: DesignTokens.sp2),
-            
+
             Text(
               widget.identifier,
               textAlign: TextAlign.center,
@@ -170,9 +170,9 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
                 color: DesignTokens.textPrimary,
               ),
             ),
-            
+
             const SizedBox(height: DesignTokens.sp8),
-            
+
             OtpInputField(
               length: 6,
               onChanged: (value) {
@@ -183,18 +183,18 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
                 _verifyOTP();
               },
             ),
-            
+
             const SizedBox(height: DesignTokens.sp6),
-            
+
             CBButton(
               text: '驗證',
               onPressed: _isLoading ? null : _verifyOTP,
               isLoading: _isLoading,
               size: CBButtonSize.large,
             ),
-            
+
             const SizedBox(height: DesignTokens.sp4),
-            
+
             Center(
               child: CooldownButton(
                 onPressed: _sendOTP,
@@ -205,9 +205,9 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
                 cooldownText: '重新發送',
               ),
             ),
-            
+
             const SizedBox(height: DesignTokens.sp6),
-            
+
             Text(
               widget.otpType == 'EMAIL'
                   ? '每個裝置最多 20 次嘗試，30秒冷卻'

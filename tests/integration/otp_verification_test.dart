@@ -28,7 +28,7 @@ void main() {
   group('OTP Verification', () {
     test('TC-AUTH-001: Email OTP send returns success', () async {
       final deviceId = const Uuid().v4();
-      
+
       final result = await supabase.rpc('send_otp', params: {
         'p_identifier': 'test@example.com',
         'p_otp_type': 'EMAIL',
