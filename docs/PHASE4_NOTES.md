@@ -43,13 +43,14 @@
 - **DistanceService**：
   - 位置：`packages/supabase_client/lib/src/distance_service.dart`
   - 方法：`getCourierToMerchantEta()`, `getMerchantToCustomerEta()`
-  - 當前狀態：回傳 `null`（後端 `h3_distance_matrix` 表不存在）
+  - 當前狀態：查詢 `h3_distance_matrix` 表（若不存在回傳 `null`）
 - **Fallback 策略**：
   - `courierToMerchantEta` 缺失 → 預設 5 分鐘
   - `merchantToCustomerEta` 缺失 → 預設 5 分鐘
   - `prepTimeMinutes` 缺失 → 預設 15 分鐘
 - **實際效果**：
-  - 因距離資料全為 fallback，排序主要依 `deliveryPrice`（R 差異）與 `prepTime`（T 差異）
+  - 若 OSRM 表存在且有資料：使用真實距離排序
+  - 若表不存在：fallback 到 5 分鐘，排序主要依 `deliveryPrice`（R）與 `prepTime`（T 的一部分）
   - 公式架構已完整，待 OSRM 表就緒即可自動啟用真實距離
 
 ##### H3 範圍過濾
@@ -94,96 +95,93 @@
   - 避免重複查詢相同格子對
 
 ##### 測試
-- **單元測試**（7 測試，全通過）：
-  - `packages/core_data/test/rt_calculator_test.dart`
-  - TC-COU-RT-001: 基本 R/T 計算
-  - TC-COU-RT-002: 使用較大的 prepTime
-  - TC-COU-RT-003: ETA 缺失時 fallback
-  - TC-COU-RT-004: prepTime 缺失時 fallback (15分)
-  - TC-COU-RT-005: 最小 T = 5 分鐘
-  - TC-COU-RT-006: R/T 降序排序
-  - TC-COU-RT-007: Tie-breaker（deliveryPrice → createdAt）
+- **單元測試**（12 測試，全通過）：
+  - `packages/core_data/test/rt_calculator_test.dart`（7 測試）
+    - TC-COU-RT-001: 基本 R/T 計算
+    - TC-COU-RT-002: 使用較大的 prepTime
+    - TC-COU-RT-003: ETA 缺失時 fallback
+    - TC-COU-RT-004: prepTime 缺失時 fallback (15分)
+    - TC-COU-RT-005: 最小 T = 5 分鐘
+    - TC-COU-RT-006: R/T 降序排序
+    - TC-COU-RT-007: Tie-breaker（deliveryPrice → createdAt）
+  - `packages/core_data/test/rt_calculator_with_eta_test.dart`（5 測試）
+    - TC-COU-RT-ETA-001: 不同 ETA 影響排序
+    - TC-COU-RT-ETA-002: 較短 merchant→customer 時間提升 R/T
+    - TC-COU-RT-ETA-003: Null ETA 使用 fallback
+    - TC-COU-RT-ETA-004: 混合 null 與真實 ETA
+    - TC-COU-RT-ETA-005: 較高外送費補償較長 ETA
 
 #### Stage 2：前往店家（Go to Merchant）
 
 ##### 功能實作
 - **UI**：店家 icon、提示文案、地址占位
-- **距離/ETA**：固定顯示「距離 1.5km」、「ETA 5 分鐘」
-- **動作**：
-  - 「開啟 Google Maps 導航」：Toast 占位
-  - 「我已抵達」：Toast（「到店拍照開發中」）→ 導覽至 Stage3
+- **資料**：接收 `Order` 物件（via GoRouter extra）
+- **導航**：Google Maps 導航按鈕（Toast 占位）
+- **到店驗證**：「我已抵達店家」按鈕 → Toast（拍照驗證占位）→ 導覽至 Stage3
 
 ##### 暫行方案
-- **店家地址**：顯示占位文案（「待整合 merchant_profiles」）
-- **Google Maps 連結**：Toast 占位
-- **到店拍照**：Toast 占位（直接進入 Stage3）
-- **距離/ETA**：固定值
+- **店家資訊**：顯示 `merchantId.substring(0, 8)`，地址硬編碼占位
+- **ETA/距離**：固定顯示「預計抵達: 5 分鐘 (1.5km)」
+- **導航**：顯示 Toast「導航功能開發中」
+- **到店驗證**：顯示 Toast「到店拍照驗證功能開發中」
 
 ##### 未來改進
-- 從 `merchant_profiles` 查詢店家地址與 Google Maps 連結
-- 整合相機 API 拍攝到店照片
-- 即時 GPS 更新距離與 ETA
-- 「即將抵達」（2 分鐘內）推播通知
+- 整合店家真實資料（名稱、地址、聯絡方式）
+- Google Maps 深連結導航
+- 到店拍照上傳 Supabase Storage
+- 聯絡店家（雙向遮罩保護）
 
-#### Stage 3：等待店家備餐（Wait for Merchant）
+#### Stage 3：店家等待（Wait for Merchant）
 
 ##### 功能實作
-- **UI**：餐廳 icon、「店家正在備餐中」文案
-- **預計備餐時間**：顯示 `order.prepTimeMinutes ?? 15`
-- **倒數計時**：占位文案（「開發中」）
-- **動作**：
-  - 「聯絡店家」：Toast 占位（「雙向遮罩保護」）
-  - 「店家已備好（模擬）」：Toast（「取餐碼驗證開發中」）→ 導覽至 Stage4
+- **UI**：備餐時間顯示、倒數占位、聯絡店家按鈕
+- **資料**：接收 `Order` 物件
+- **流程**：顯示備餐時間 → 等待完成 → 進入 Stage4
 
 ##### 暫行方案
-- **倒數計時**：顯示占位文案，未實作即時倒數
-- **取餐碼驗證**：Toast 占位（直接進入 Stage4）
-- **聯絡店家**：Toast 占位
+- **倒數計時**：固定顯示「剩餘時間: 10 分鐘」（未實作實際倒數）
+- **聯絡店家**：Toast 占位（雙向遮罩保護功能開發中）
+- **取餐驗證**：Toast 占位（取餐碼驗證功能開發中）
 
 ##### 未來改進
-- 即時倒數計時（承諾取餐時間 - 當前時間）
-- 取餐碼輸入/掃描驗證
-- 整合雙向遮罩通訊（電話/訊息）
-- Realtime 監聽 `merchant_prep_ready` 事件自動推進
+- 實際倒數計時器（基於 `prepTimeMinutes`）
+- 取餐碼驗證流程
+- 雙向遮罩通訊（電話/訊息）
+- 問題通報（餐點延遲/缺貨）
 
 #### Stage 4：前往顧客（Go to Customer）
 
 ##### 功能實作
-- **UI**：顧客 icon、提示文案、地址占位
-- **距離/ETA**：固定顯示「距離 2.3km」、「ETA 8 分鐘」
-- **動作**：
-  - 「開啟 Google Maps 導航」：Toast 占位
-  - 「聯絡顧客」：Toast 占位（「雙向遮罩保護」）
-  - 「完成送達」：呼叫 `markDelivered()` → Toast → 返回首頁
+- **UI**：顧客 icon、地址占位、導航/聯絡按鈕
+- **資料**：接收 `Order` 物件
+- **完成送達**：呼叫 `markDelivered()` → 返回首頁
 
 ##### 暫行方案
-- **顧客地址**：顯示占位文案（「待整合 customer_addresses」）
-- **Google Maps 連結**：Toast 占位
-- **送達拍照/簽收**：未實作（直接呼叫 `markDelivered`）
-- **距離/ETA**：固定值
-- **markDelivered**：使用 REST UPDATE（TODO: 改為 RPC）
+- **顧客資訊**：顯示 `customerId.substring(0, 8)`，地址硬編碼占位
+- **ETA/距離**：固定顯示「預計抵達: 8 分鐘 (2.3km)」
+- **導航**：Toast 占位
+- **聯絡顧客**：Toast 占位（雙向遮罩保護）
+- **完成送達**：呼叫 REST `UPDATE status = DELIVERED`
 
 ##### 未來改進
-- 從 `customer_addresses` 查詢顧客地址（隱私保護：僅顯示區域）
-- 整合相機 API 拍攝送達照片或電子簽收
-- 即時 GPS 更新距離與 ETA
-- 「即將抵達」（2 分鐘內）推播通知顧客
-- `markDelivered` 改為 RPC 含照片/簽收驗證
+- 整合顧客真實地址
+- Google Maps 深連結
+- 送達拍照/簽收驗證
+- 雙向遮罩通訊
 
 ---
 
-### 4.3 服務層實作
+### 4.3 服務層整合
 
-#### OrderService 擴充
+#### OrderService
 - **位置**：`packages/supabase_client/lib/src/order_service.dart`
-- **新增方法**：
-  - `acceptOrder(orderId)`: REST UPDATE with optimistic lock (`.eq('status', WAITING_COURIER)`)
-    - TODO: 改為 RPC `accept_order` 含原子性衝突處理
-  - `markDelivered(orderId)`: REST UPDATE → DELIVERED
-    - TODO: 改為 RPC 含照片/簽收驗證
+- **方法**：
+  - `acceptOrder(orderId)`: REST `UPDATE` + 樂觀鎖（`.eq('status', WAITING_COURIER)`）
+  - `markDelivered(orderId)`: REST `UPDATE status = DELIVERED`
+  - `getCourierHistory(courierId, from?, to?)`: 查詢已完成/取消訂單
+- **TODO**：切換為 RPC（原子操作、照片/簽收驗證）
 
 #### RealtimeService
-- **現有方法**：`watchAvailableOrders(h3Cell?)`
 - **當前狀態**：已實作客端 map 過濾 `WAITING_COURIER`
 - **暫行方案**：h3Cell 參數可選（未實作 H3 範圍過濾）
 
@@ -253,47 +251,126 @@
 ### 4.5 首次登入 KYC 流程
 
 #### 暫行方案
-- **未實作**：真實姓名輸入、證件拍攝流程（身分證/自拍/駕照/行照/良民證/帳簿/保溫袋 Logo）
-- **Dev bypass**：已文件化於 `docs/DEVICE_SECURITY.md`（開發期間跳過）
+- **未實作**：證件拍攝（7 項證件：身分證、駕照、行照、保險、健檢、良民證、銀行存摺）
+- **未實作**：Supabase Storage 上傳
+- **未實作**：審核狀態追蹤
 
 #### 未來改進
-- 建立 `apps/courier_app/lib/features/kyc/` 多步驟表單
-- 整合相機 API 與 Supabase Storage 上傳
-- 開發版允許手動上傳檔案（file picker）
+- 拍照/選檔介面（web 支援 file picker，mobile 支援相機）
+- Storage bucket: `kyc-documents/{courierId}/{document_type}.jpg`
+- 審核狀態欄位與通知
+- 審核駁回重新上傳流程
 
 ---
 
-### 4.6 測試
+### 4.6 歷史訂單與帳號管理（History/Account）
 
-#### 單元測試（4 測試，全通過）
-- `packages/core_data/test/courier_available_orders_filter_test.dart`
-  - TC-COU-FILTER-001: 僅過濾 WAITING_COURIER
-  - TC-COU-FILTER-002: fromString 解析正確
-  - TC-COU-FILTER-003: 空列表處理
-  - TC-COU-FILTER-004: 簡化外送費排序（降序）
+#### History 頁面實作
+- **位置**：`apps/courier_app/lib/features/history/presentation/history_page.dart`
+- **功能**：
+  - 篩選：時間範圍（今日/本週/本月/自訂）、狀態（DELIVERED/取消）、關鍵字搜尋
+  - 列表卡片：訂單編號、完成時間、狀態標籤、餐費/外送費
+  - 點擊卡片開詳情 BottomSheet（`order_details_sheet.dart`）
+- **資料來源**：
+  - `OrderService.getCourierHistory(courierId, from?, to?)`
+  - 查詢 `orders` 表，篩選 `courier_id` 與 `status in (DELIVERED, CANCELLED_*)`
+  - 時間範圍過濾：`updated_at` 欄位
+  - 其餘篩選（狀態、關鍵字）：前端處理
+- **UI**：
+  - 全用 Design Tokens
+  - 狀態標籤：已完成（綠）、已取消（紅）
+  - EmptyState：「暫無訂單」
 
-#### 整合測試（待實作）
-- TODO: 使用 Supabase Local 測試 `acceptOrder` 成功路徑與 RLS
-- TODO: 測試 `acceptOrder` 樂觀鎖衝突（兩個 courier 同時接單）
-- TODO: 測試 `markDelivered` 狀態轉換
-- 前置條件：Supabase Local 需有測試訂單與多個 courier JWT
+#### OrderDetailsSheet 實作
+- **位置**：`apps/courier_app/lib/features/history/presentation/order_details_sheet.dart`
+- **功能**：
+  - DraggableScrollableSheet（可拖曳高度）
+  - 顯示：訂單編號、狀態、建立/完成時間、餐點明細、價格明細（餐費/外送費/總計）
+- **UI**：全用 Design Tokens，狀態標籤與 History 卡片一致
+
+#### Account 頁面實作
+- **位置**：`apps/courier_app/lib/features/account/presentation/account_page.dart`
+- **功能段落**：
+  1. **個人資料**：姓名、Email、車輛資訊（Toast 占位）
+  2. **工作狀態**：接受新訂單開關（Toast 回饋，實際狀態未同步後端）
+  3. **通知與設定**：推播通知開關（Toast 回饋）、KYC 驗證狀態（Toast 占位）、裝置安全（Toast 占位）
+  4. **金融與文件**：銀行帳戶（遮罩顯示）、合約文件（Toast 占位）
+  5. **幫助與支援**：幫助中心、意見回饋、關於（版本號）
+  6. **登出**：確認對話框 → 呼叫 `authService.signOut()`
+- **UI**：
+  - 全用 Design Tokens
+  - CBCard 分段
+  - ListTile + Switch/Chevron
+  - 登出按鈕紅色（`DesignTokens.danger`）
+
+#### 測試
+- **單元測試**（8 測試，全通過）：
+  - `packages/core_data/test/courier_history_filter_test.dart`（5 測試）
+    - TC-COU-HIS-001: 過濾 DELIVERED 狀態
+    - TC-COU-HIS-002: 過濾取消狀態
+    - TC-COU-HIS-003: 時間範圍過濾（今日）
+    - TC-COU-HIS-004: 關鍵字搜尋
+    - TC-COU-HIS-005: 複合過濾（狀態 + 時間）
+  - `packages/core_data/test/courier_account_test.dart`（3 測試）
+    - TC-COU-ACC-001: 接單開關切換
+    - TC-COU-ACC-002: 推播通知切換
+    - TC-COU-ACC-003: 多個開關獨立運作
+
+#### 暫行方案與缺口
+- **資料來源**：
+  - History：OrderService 查詢，前端篩選（狀態、關鍵字）
+  - Account：個人資料為靜態占位（未查詢 `couriers` 表或 `auth.users`）
+- **狀態同步**：
+  - 接單開關、推播開關：僅前端 state，未同步後端
+  - 建議欄位：`couriers.is_accepting_orders` (bool), `couriers.push_enabled` (bool)
+- **CSV 匯出**：未實作（可加按鈕 + Toast 占位）
+- **KYC 狀態**：顯示「已完成（開發中）」，未查詢實際狀態
+
+#### 未來改進
+- **後端同步**：
+  - 新增 RPC `update_courier_status(is_accepting_orders, push_enabled)`
+  - 查詢 `couriers` 表取得真實個人資料
+- **CSV 匯出**：
+  - 後端產生 CSV（或前端 dart:io）
+  - 下載/分享功能
+- **KYC 整合**：
+  - 查詢驗證狀態
+  - 未通過時顯示警告與補件連結
 
 ---
 
 ## 已知缺口與待辦
 
-1. **OSRM 距離資料**：預計算 H3 距離矩陣（`h3_distance_matrix` 表）
-2. **R/T 排序**：完整公式需整合 OSRM + 備餐時間
-3. **H3 範圍過濾**：k=40 可接單範圍未實作
-4. **熱度地圖**：計算公式與顏色渲染
-5. **GPS 定位**：即時位置上報與 H3 cell 計算
+1. **OSRM 距離資料**：
+   - ✅ `DistanceService` 已實作查詢邏輯（若表存在則讀取，否則回傳 null）
+   - ⚠️ `h3_distance_matrix` 表尚未建立（當前使用 fallback 5min）
+   - 一旦表建立並導入資料，R/T 排序將自動使用真實 ETA
+2. **R/T 排序 ETA 查詢**：
+   - ✅ 已改用 `FutureBuilder` 包裝 + 記憶體快取
+   - ✅ 非同步批次查詢所有訂單的 ETA
+   - ⚠️ 快取策略為簡易記憶體（無持久化、無過期機制）
+   - 未來可改進：LRU 快取、過期時間、預載附近格子
+3. **H3 範圍過濾**：
+   - ✅ 客端 k=40 過濾已實作
+   - TODO: 後端 RPC/View 預過濾（減少傳輸量）
+4. **GPS 即時更新**：
+   - ✅ GPS→H3 已整合
+   - TODO: 監聽 GPS stream，移動時重新計算範圍
+5. **熱度地圖**：
+   - ✅ HeatMath 完整實作
+   - ✅ 3x3 網格可視化
+   - TODO: 實際資料查詢、k=40 完整網格、30秒更新、互動
 6. **照片驗證**：到店/送達拍照與 Storage 上傳
 7. **取餐碼/簽收**：驗證流程
 8. **Google Maps 導航**：深連結整合
 9. **雙向遮罩通訊**：聯絡店家/顧客
-10. **KYC 流程**：首次登入證件上傳
+10. **KYC 流程**：首次登入證件上傳（7 項證件）
 11. **RPC 替代 REST**：`accept_order`/`mark_delivered` 改為 RPC
 12. **整合測試**：Supabase Local 完整路徑與 RLS
+13. **History/Account 後端同步**：
+    - 接單開關/推播開關未同步後端
+    - 個人資料為靜態占位
+    - CSV 匯出未實作
 
 ---
 
@@ -304,15 +381,16 @@
 - [x] Phase 4.2+：R/T 排序邏輯與 fallback
 - [x] Phase 4.3：GPS→H3 與 k=40 範圍過濾（客端）
 - [x] Phase 4.4：熱度地圖最小實作（HeatMath + 3x3 網格 + mock 資料）
-- [ ] Phase 4.3+：OSRM 表建立與真實 ETA 整合
+- [x] Phase 4.3+：OSRM 查詢邏輯與真實 ETA 整合（表待建立）
+- [x] Phase 4.6：History/Account 骨架（篩選、詳情、開關占位）
+- [ ] Phase 4.3++：OSRM 表建立與資料導入
 - [ ] Phase 4.4+：熱度地圖完善（實際資料查詢、k=40 完整網格、定時更新）
 - [ ] Phase 4.5：KYC 流程（證件拍攝與上傳）
-- [ ] Phase 4.6：照片驗證與取餐碼
-- [ ] Phase 4.7：History/Account 頁面
+- [ ] Phase 4.7：照片驗證與取餐碼
 - [ ] Phase 4.8：RPC 替代 REST 與整合測試
+- [ ] Phase 4.9：History/Account 後端同步（狀態、個人資料、CSV 匯出）
 
 ---
 
-**版本**：Phase 4.4 Heat Map 最小實作完成
+**版本**：Phase 4.6 History/Account 骨架完成
 **更新日期**：2025-01-15
-

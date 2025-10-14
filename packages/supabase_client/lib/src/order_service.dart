@@ -280,6 +280,38 @@ class AcceptOrderResult {
   });
 }
 
+  /// Get courier order history
+  /// [REQ-COU-HIS-001] Fetch completed/cancelled orders for courier
+  Future<List<Order>> getCourierHistory({
+    required String courierId,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    var query = _client
+        .from('orders')
+        .select()
+        .eq('courier_id', courierId)
+        .in_('status', [
+          OrderStatus.delivered.value,
+          OrderStatus.cancelledCustomer.value,
+          OrderStatus.cancelledMerchant.value,
+          OrderStatus.cancelledCourier.value,
+        ])
+        .order('updated_at', ascending: false);
+
+    if (from != null) {
+      query = query.gte('updated_at', from.toIso8601String());
+    }
+
+    if (to != null) {
+      query = query.lte('updated_at', to.toIso8601String());
+    }
+
+    final response = await query;
+    return (response as List).map((json) => Order.fromJson(json)).toList();
+  }
+}
+
 /// Order service provider
 final orderServiceProvider = Provider<OrderService>((ref) {
   final client = ref.watch(supabaseProvider);

@@ -1,0 +1,63 @@
+feat(phase4): enable real RT with OSRM distance query [REQ-COU-FLOW-004/TC-COU-RT-ETA-*]
+
+- DistanceService now attempts real OSRM queries:
+  - packages/supabase_client/lib/src/distance_service.dart
+  - getCourierToMerchantEta: Query h3_distance_matrix table
+  - getMerchantToCustomerEta: Query h3_distance_matrix table
+  - Expected schema: (from_h3 text, to_h3 text, time_minutes int, distance_km real), unique index (from_h3, to_h3)
+  - Graceful fallback: If table doesn't exist or query fails, return null (triggers RTCalculator 5min default)
+  - Query example documented in PHASE4_NOTES.md
+
+- Stage1 async ETA integration:
+  - apps/courier_app/lib/features/orders/flow/stage1_available_list_page.dart
+  - Strategy: FutureBuilder wraps _sortByRTWithRealETA()
+  - Batch fetch all orders' courier→merchant and merchant→customer ETAs
+  - Simple in-memory cache: Map<String, int?> with key "${from_h3}->${to_h3}"
+  - Avoids redundant queries for same H3 pair
+  - First render: Shows unsorted/fallback list (no blocking)
+  - After ETA fetch: Re-sorts list (no flicker, stable Key)
+  - If OSRM table absent: Falls back to 5min, sorting still works
+
+- R/T with real ETA unit tests (5 tests, all pass):
+  - packages/core_data/test/rt_calculator_with_eta_test.dart
+  - TC-COU-RT-ETA-001: Different ETAs affect sorting
+  - TC-COU-RT-ETA-002: Shorter merchant-to-customer time boosts R/T
+  - TC-COU-RT-ETA-003: Null ETAs use fallback (5min)
+  - TC-COU-RT-ETA-004: Mixed null and real ETAs
+  - TC-COU-RT-ETA-005: Higher delivery price compensates for longer ETA
+
+- Updated docs/PHASE4_NOTES.md: Section 4.2 Stage1
+  - R/T sorting now async with FutureBuilder + cache
+  - DistanceService implementation and query example
+  - OSRM table status: Logic ready, table not created yet (fallback active)
+  - Cache strategy: Simple in-memory, future improvements noted (LRU, expiry, pre-fetch)
+  - Known gaps updated: Table creation pending, cache can be improved
+
+Acceptance:
+- [x] DistanceService queries h3_distance_matrix (graceful if table absent)
+- [x] Stage1 uses real ETAs if available, fallback if not
+- [x] No UI blocking or flickering (FutureBuilder + Key stability)
+- [x] UI uses Design Tokens, list Key stable
+- [x] Unit tests pass (5 new ETA-specific tests + 7 existing R/T tests)
+- [x] docs/PHASE4_NOTES.md updated with implementation status and query examples
+- [x] No docs/archive/ modifications
+
+Current behavior (OSRM table not created):
+- DistanceService returns null for all queries
+- RTCalculator uses 5min fallback
+- Sorting primarily by deliveryPrice (R) and prepTimeMinutes (T component)
+- Once table populated: Sorting will auto-enable real distances
+
+Future improvements documented:
+- LRU cache with expiry
+- Pre-fetch nearby cells (k=40 range)
+- Persistent cache (SharedPreferences/Hive)
+- Background refresh strategy
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Tests:
+cd packages/core_data && dart test
+# All R/T tests pass (7 original + 5 ETA-specific = 12 total)
+
