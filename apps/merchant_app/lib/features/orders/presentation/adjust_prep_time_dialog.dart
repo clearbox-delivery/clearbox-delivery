@@ -27,7 +27,7 @@ class _AdjustPrepTimeDialogState extends ConsumerState<AdjustPrepTimeDialog> {
 
   Future<void> _handleAdjust(int delta) async {
     final newTime = _currentPrepTime + delta;
-    
+
     // Validate range (5-60 minutes)
     if (newTime < 5 || newTime > 60) {
       CBToast.show(
@@ -42,7 +42,7 @@ class _AdjustPrepTimeDialogState extends ConsumerState<AdjustPrepTimeDialog> {
 
     try {
       final orderService = ref.read(orderServiceProvider);
-      
+
       await orderService.merchantAdjustPrepTime(
         orderId: widget.order.id,
         deltaMinutes: delta,

@@ -39,7 +39,7 @@ class WaitingCourierTab extends ConsumerWidget {
         }
 
         final allOrders = snapshot.data ?? [];
-        
+
         // Filter client-side for WAITING_COURIER
         final waitingOrders = allOrders
             .where((o) => o.status == OrderStatus.waitingCourier)

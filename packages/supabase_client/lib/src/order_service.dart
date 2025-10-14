@@ -74,6 +74,28 @@ class OrderService {
     });
   }
 
+  /// Merchant marks prep ready (可取餐)
+  /// [merchant_app_whitepaper.md Section 4.3]
+  Future<void> merchantPrepReady({
+    required String orderId,
+  }) async {
+    await _client.rpc('merchant_prep_ready', params: {
+      'p_order_id': orderId,
+    });
+  }
+
+  /// Merchant extends prep time (+5/+10 minutes)
+  /// [merchant_app_whitepaper.md Section 4.3]
+  Future<void> merchantExtendPrepTime({
+    required String orderId,
+    required int plusMinutes,
+  }) async {
+    await _client.rpc('merchant_extend_prep_time', params: {
+      'p_order_id': orderId,
+      'p_plus_minutes': plusMinutes,
+    });
+  }
+
   /// Courier accepts order (atomic with conflict handling)
   /// [TC-COU-ACPT-001]
   Future<AcceptOrderResult> acceptOrder(String orderId) async {

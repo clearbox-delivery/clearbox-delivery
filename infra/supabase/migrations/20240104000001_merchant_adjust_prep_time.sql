@@ -16,11 +16,11 @@ DECLARE
 BEGIN
   -- Verify merchant owns this order and it's in WAITING_COURIER status
   SELECT prep_time_minutes INTO v_current_prep_time
-  FROM orders 
-  WHERE id = p_order_id 
+  FROM orders
+  WHERE id = p_order_id
     AND merchant_id = auth.uid()
     AND status = 'WAITING_COURIER';
-    
+
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Order not found or unauthorized';
   END IF;
@@ -30,7 +30,7 @@ BEGIN
 
   -- Update prep time
   UPDATE orders
-  SET 
+  SET
     prep_time_minutes = v_new_prep_time,
     updated_at = NOW()
   WHERE id = p_order_id;
