@@ -101,7 +101,7 @@ class DistanceService {
           final toH3 = row['to_h3'] as String;
           final timeMinutes = row['time_minutes'] as int?;
           final key = '$fromH3->$toH3';
-          
+
           _putCache(key, timeMinutes);
           result[key] = timeMinutes;
         }
@@ -129,13 +129,13 @@ class DistanceService {
   int? _getCached(String key) {
     final entry = _cache[key];
     if (entry == null) return null;
-    
+
     // Check TTL
     if (DateTime.now().difference(entry.timestamp) > _cacheTTL) {
       _cache.remove(key);
       return null;
     }
-    
+
     return entry.value;
   }
 
@@ -147,7 +147,7 @@ class DistanceService {
           .key;
       _cache.remove(oldestKey);
     }
-    
+
     _cache[key] = _CacheEntry(value: value, timestamp: DateTime.now());
   }
 

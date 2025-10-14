@@ -270,16 +270,85 @@
 
 ### 4.5 首次登入 KYC 流程
 
-#### 暫行方案
-- **未實作**：證件拍攝（7 項證件：身分證、駕照、行照、保險、健檢、良民證、銀行存摺）
-- **未實作**：Supabase Storage 上傳
-- **未實作**：審核狀態追蹤
+#### 功能實作
+- **KYCFlowPage**（`apps/courier_app/lib/features/kyc/presentation/kyc_flow_page.dart`）：
+  - Stepper 流程（9 步驟，不可跳過）：
+    1. 真實姓名輸入
+    2. 身分證正面拍攝
+    3. 身分證反面拍攝
+    4. 正面自拍
+    5. 機車駕照拍攝
+    6. 機車行照拍攝
+    7. 良民證拍攝
+    8. 銀行帳簿拍攝 + 帳號輸入
+    9. 保溫袋 Logo 拍攝
+  - 每步驗證：姓名非空、證件已上傳、銀行帳號非空
+  - 完成後導覽至 `/current-orders`
+  - UI 全用 Design Tokens，Stepper + CBButton + CBInput
+
+- **StorageService**（`packages/supabase_client/lib/src/storage_service.dart`）：
+  - `uploadKYCDocument(courierId, documentType, fileBytes)`: 上傳 KYC 證件
+  - `uploadOrderPhoto(orderId, photoType, fileBytes)`: 上傳訂單照片（到店/送達）
+  - `uploadMenuPhoto(merchantId, itemId, fileBytes)`: 上傳菜單照片
+  - Bucket 規劃：
+    - `kyc-documents/{courierId}/{documentType}.jpg`
+    - `order-photos/{orderId}/{photoType}.jpg`
+    - `menu-photos/{merchantId}/{itemId}.jpg`
+
+#### 暫行方案（拍照/上傳）
+- **拍照功能**：
+  - 當前為 Toast 占位（「拍照/上傳功能開發中」）
+  - 模擬上傳：設定 `documents[key] = 'mock_url'`
+  - 顯示「已上傳」狀態（綠色 check icon）
+- **StorageService**：
+  - 當前回傳 mock URL（`https://mock-storage.supabase.co/...`）
+  - TODO 註解標示實際 `storage.from('bucket').uploadBinary()` 程式碼
+- **開發期間替代**：
+  - Web/桌面：使用 file picker（`file_picker` package）
+  - Mobile：使用相機（`image_picker` package）
+  - Dev 模式：允許使用既有照片
+
+#### Storage Bucket 規劃
+- **kyc-documents**（KYC 證件）：
+  - 路徑：`{courierId}/{documentType}.{ext}`
+  - RLS：僅本人與管理員可讀寫
+  - 檔案類型：jpg, png（最大 5MB）
+  - 用途：審核外送員資格
+- **order-photos**（訂單照片）：
+  - 路徑：`{orderId}/{photoType}.jpg`
+  - RLS：訂單相關角色可讀（courier/merchant/customer）
+  - 用途：到店驗證、送達驗證
+- **menu-photos**（菜單照片）：
+  - 路徑：`{merchantId}/{itemId}.jpg`
+  - RLS：公開可讀，商家可寫
+  - 用途：菜單品項展示
+
+#### 測試
+- **單元測試**（5 測試，全通過）：
+  - `packages/core_data/test/kyc_validation_test.dart`
+  - TC-COU-KYC-001: 姓名必填
+  - TC-COU-KYC-002: 全部 8 項證件必填
+  - TC-COU-KYC-003: 銀行帳號必填
+  - TC-COU-KYC-004: 證件類型驗證
+  - TC-COU-KYC-005: 步驟進退驗證
 
 #### 未來改進
-- 拍照/選檔介面（web 支援 file picker，mobile 支援相機）
-- Storage bucket: `kyc-documents/{courierId}/{document_type}.jpg`
-- 審核狀態欄位與通知
-- 審核駁回重新上傳流程
+- **拍照整合**：
+  - Web：`file_picker` package（選擇既有檔案）
+  - Mobile：`image_picker` package（相機拍攝）
+  - 壓縮與裁切（`image` package）
+- **Storage 實際上傳**：
+  - 取消 TODO 註解，啟用 `storage.uploadBinary()`
+  - 回傳實際 public URL
+  - 錯誤處理與重試
+- **審核狀態**：
+  - `couriers` 表新增 `kyc_status` 欄位（pending/approved/rejected）
+  - `kyc_documents` 表記錄所有上傳檔案
+  - 審核駁回通知與重新上傳流程
+- **安全性**：
+  - 照片加浮水印
+  - 敏感資料加密儲存
+  - 審核後自動刪除或移至歸檔 bucket
 
 ---
 
@@ -406,14 +475,15 @@
 - [x] Phase 4.3+：OSRM 查詢邏輯與真實 ETA 整合
 - [x] Phase 4.3++：OSRM Migration + 批量查詢 + LRU 快取 + ETL 文件
 - [x] Phase 4.6：History/Account 骨架（篩選、詳情、開關占位）
+- [x] Phase 4.5：KYC 流程骨架（Stepper + Storage 規劃 + 占位上傳）
 - [ ] Phase 4.3+++：OSRM 資料導入（執行 ETL 腳本，導入 300 萬筆距離資料）
 - [ ] Phase 4.4+：熱度地圖完善（實際資料查詢、k=40 完整網格、定時更新）
-- [ ] Phase 4.5：KYC 流程（證件拍攝與上傳）
+- [ ] Phase 4.5+：KYC Storage 整合（實際拍照/上傳、審核狀態）
 - [ ] Phase 4.7：照片驗證與取餐碼
 - [ ] Phase 4.8：RPC 替代 REST 與整合測試
 - [ ] Phase 4.9：History/Account 後端同步（狀態、個人資料、CSV 匯出）
 
 ---
 
-**版本**：Phase 4.3++ OSRM 批量查詢與快取完成  
+**版本**：Phase 4.5 KYC 流程骨架完成  
 **更新日期**：2025-01-15

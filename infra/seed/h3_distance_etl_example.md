@@ -57,40 +57,40 @@ output = []
 for from_cell in cells:
     # Get k=40 ring neighbors
     neighbors = h3.k_ring(from_cell, 40)
-    
+
     # Batch query OSRM (max 100 destinations per request)
     for i in range(0, len(neighbors), 100):
         batch = list(neighbors)[i:i+100]
-        
+
         # Get coordinates
         from_coord = h3.h3_to_geo(from_cell)
         to_coords = [h3.h3_to_geo(c) for c in batch]
-        
+
         # OSRM table request
         coords_str = f"{from_coord[1]},{from_coord[0]};" + \
                      ";".join([f"{c[1]},{c[0]}" for c in to_coords])
-        
+
         response = requests.get(
             f"{OSRM_URL}/table/v1/driving/{coords_str}",
             params={'sources': '0', 'annotations': 'duration,distance'}
         )
-        
+
         if response.status_code == 200:
             data = response.json()
             durations = data['durations'][0]  # First row (source 0)
             distances = data['distances'][0]
-            
+
             for j, to_cell in enumerate(batch):
                 time_min = int(durations[j+1] / 60)  # Convert seconds to minutes
                 dist_km = distances[j+1] / 1000  # Convert meters to km
-                
+
                 output.append({
                     'from_h3': from_cell,
                     'to_h3': to_cell,
                     'time_minutes': time_min,
                     'distance_km': round(dist_km, 2)
                 })
-    
+
     if len(output) % 10000 == 0:
         print(f"Processed {len(output)} pairs...")
 

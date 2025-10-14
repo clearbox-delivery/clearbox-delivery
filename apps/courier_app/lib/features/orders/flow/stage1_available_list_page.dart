@@ -139,7 +139,7 @@ class _Stage1AvailableListPageState extends ConsumerState<Stage1AvailableListPag
   /// Strategy: Batch query all unique H3 pairs, cache results, graceful fallback
   Future<List<Order>> _sortByRTWithRealETA(List<Order> orders) async {
     if (orders.isEmpty) return orders;
-    
+
     final distanceService = ref.read(distanceServiceProvider);
     final courierToMerchantEtas = <String, int?>{};
     final merchantToCustomerEtas = <String, int?>{};

@@ -43,13 +43,13 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     dm.from_h3,
     dm.to_h3,
     dm.time_minutes
   FROM h3_distance_matrix dm
   WHERE (dm.from_h3, dm.to_h3) IN (
-    SELECT 
+    SELECT
       pair->>'from_h3',
       pair->>'to_h3'
     FROM jsonb_array_elements(p_pairs) AS pair
