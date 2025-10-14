@@ -11,6 +11,7 @@ class StorageService {
 
   /// Upload KYC document
   /// [courier_app_whitepaper.md Section 2]
+  /// [REQ-COU-KYC-002] Actual storage upload
   /// Bucket: kyc-documents/{courierId}/{documentType}.jpg
   Future<String?> uploadKYCDocument({
     required String courierId,
@@ -20,21 +21,28 @@ class StorageService {
   }) async {
     try {
       final path = '$courierId/$documentType.$fileExtension';
-      
-      // TODO: Actual upload to Supabase Storage
-      // await _client.storage
-      //     .from('kyc-documents')
-      //     .uploadBinary(path, fileBytes, fileOptions: FileOptions(upsert: true));
-      // 
-      // final publicUrl = _client.storage
-      //     .from('kyc-documents')
-      //     .getPublicUrl(path);
-      // 
-      // return publicUrl;
 
-      // For now, return mock URL
-      return 'https://mock-storage.supabase.co/kyc-documents/$path';
+      // Upload to Supabase Storage
+      await _client.storage
+          .from('kyc-documents')
+          .uploadBinary(
+            path,
+            fileBytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: 'image/$fileExtension',
+            ),
+          );
+
+      // Get public URL
+      final publicUrl = _client.storage
+          .from('kyc-documents')
+          .getPublicUrl(path);
+
+      return publicUrl;
     } catch (e) {
+      // Storage bucket not created or upload failed
+      // Return null to trigger error handling in UI
       return null;
     }
   }
@@ -48,7 +56,7 @@ class StorageService {
   }) async {
     try {
       final path = '$orderId/$photoType.jpg';
-      
+
       // TODO: Actual upload
       return 'https://mock-storage.supabase.co/order-photos/$path';
     } catch (e) {
@@ -65,7 +73,7 @@ class StorageService {
   }) async {
     try {
       final path = '$merchantId/$itemId.jpg';
-      
+
       // TODO: Actual upload
       return 'https://mock-storage.supabase.co/menu-photos/$path';
     } catch (e) {

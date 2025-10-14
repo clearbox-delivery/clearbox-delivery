@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:supabase_client/supabase_client.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// KYC Flow Page - First-time login document collection
 /// [courier_app_whitepaper.md Section 2]
@@ -234,19 +238,115 @@ class _KYCFlowPageState extends ConsumerState<KYCFlowPage> {
   }
 
   Future<void> _handleUpload(String docKey) async {
-    // TODO: Implement camera/file picker
-    // For web/dev: file picker
-    // For mobile: camera
-    CBToast.show(
-      context: context,
-      message: '拍照/上傳功能開發中（Storage 整合待完成）',
-      type: CBToastType.info,
-    );
+    try {
+      List<int>? fileBytes;
+      String? fileExtension = 'jpg';
 
-    // Simulate upload
-    setState(() {
-      _documents[docKey] = 'mock_${docKey}_url';
-    });
+      if (kIsWeb) {
+        // Web: Use file picker
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+        );
+
+        if (result != null && result.files.isNotEmpty) {
+          fileBytes = result.files.first.bytes;
+          fileExtension = result.files.first.extension ?? 'jpg';
+        }
+      } else {
+        // Mobile: Use camera (prefer) or gallery
+        final ImagePicker picker = ImagePicker();
+        final source = await showDialog<ImageSource>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('選擇來源'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('拍照'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('從相簿選擇'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        if (source != null) {
+          final XFile? image = await picker.pickImage(source: source);
+          if (image != null) {
+            fileBytes = await image.readAsBytes();
+            fileExtension = image.path.split('.').last;
+          }
+        }
+      }
+
+      if (fileBytes == null || fileBytes.isEmpty) {
+        return; // User cancelled
+      }
+
+      // Upload to Storage
+      if (mounted) {
+        CBToast.show(
+          context: context,
+          message: '上傳中...',
+          type: CBToastType.info,
+        );
+      }
+
+      final authService = ref.read(authServiceProvider);
+      final courierId = authService.currentUserId;
+
+      if (courierId == null) {
+        if (mounted) {
+          CBToast.show(
+            context: context,
+            message: '請先登入',
+            type: CBToastType.error,
+          );
+        }
+        return;
+      }
+
+      final storageService = ref.read(storageServiceProvider);
+      final url = await storageService.uploadKYCDocument(
+        courierId: courierId,
+        documentType: docKey,
+        fileBytes: fileBytes,
+        fileExtension: fileExtension,
+      );
+
+      if (url != null && mounted) {
+        setState(() {
+          _documents[docKey] = url;
+        });
+        CBToast.show(
+          context: context,
+          message: '上傳成功',
+          type: CBToastType.success,
+        );
+      } else if (mounted) {
+        CBToast.show(
+          context: context,
+          message: '上傳失敗，請重試（Storage bucket 可能尚未建立）',
+          type: CBToastType.error,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        CBToast.show(
+          context: context,
+          message: '上傳失敗: $e',
+          type: CBToastType.error,
+        );
+      }
+    }
   }
 
   void _onStepContinue() {

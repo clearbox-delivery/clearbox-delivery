@@ -1,0 +1,98 @@
+feat(phase4): courier KYC flow skeleton + storage planning [REQ-COU-KYC-001/TC-COU-KYC-*]
+
+Combined PR: OSRM schema + batch query optimization + KYC flow skeleton
+
+Part 1: OSRM H3 Matrix + Batch Query + LRU Cache
+- Migration created:
+  - infra/supabase/migrations/20250115000000_h3_distance_matrix.sql
+  - Table: h3_distance_matrix (from_h3, to_h3, time_minutes, distance_km, PK)
+  - Indexes: from_h3, to_h3
+  - RLS: Public read-only (ETL writes only)
+  - RPC: get_batch_eta(p_pairs JSONB) for batch queries
+
+- DistanceService batch query + LRU cache:
+  - packages/supabase_client/lib/src/distance_service.dart
+  - getBatchETA(pairs) → Map<"from->to", time_minutes?>
+  - LRU cache: 500 entries, 30min TTL, negative caching
+  - Graceful fallback if RPC unavailable
+
+- Stage1 upgraded to batch queries:
+  - apps/courier_app/lib/features/orders/flow/stage1_available_list_page.dart
+  - De-duplicate H3 pairs before querying
+  - Performance: 20 orders → 1-2 RPC calls (was 40 individual queries)
+
+- ETL documentation:
+  - infra/seed/h3_distance_etl_example.md
+  - Python scripts for OSRM queries and CSV generation
+  - Import methods and data volume (~3M rows, 150MB)
+
+- Batch de-duplication tests (3 tests, all pass):
+  - packages/core_data/test/batch_eta_dedup_test.dart
+
+Part 2: KYC Flow Skeleton + Storage Planning
+- KYCFlowPage complete:
+  - apps/courier_app/lib/features/kyc/presentation/kyc_flow_page.dart
+  - 9-step Stepper (cannot skip):
+    1. Real name input
+    2-3. ID card front/back
+    4. Selfie
+    5. Driver license
+    6. Vehicle registration
+    7. Police record
+    8. Bank book + account number
+    9. Insulated bag logo
+  - Validation: Name not empty, all docs uploaded, bank account required
+  - Completion → navigate to /current-orders
+  - UI uses Design Tokens (Stepper + CBButton + CBInput)
+
+- StorageService skeleton:
+  - packages/supabase_client/lib/src/storage_service.dart
+  - uploadKYCDocument(courierId, documentType, fileBytes)
+  - uploadOrderPhoto(orderId, photoType, fileBytes)
+  - uploadMenuPhoto(merchantId, itemId, fileBytes)
+  - Returns mock URLs (TODO: actual storage.uploadBinary())
+
+- Bucket planning documented:
+  - kyc-documents: {courierId}/{documentType}.jpg (RLS: user + admin)
+  - order-photos: {orderId}/{photoType}.jpg (RLS: order participants)
+  - menu-photos: {merchantId}/{itemId}.jpg (RLS: public read, merchant write)
+
+- KYC validation unit tests (5 tests, all pass):
+  - packages/core_data/test/kyc_validation_test.dart
+  - TC-COU-KYC-001: Name required
+  - TC-COU-KYC-002: All 8 documents required
+  - TC-COU-KYC-003: Bank account required
+  - TC-COU-KYC-004: Document types validation
+  - TC-COU-KYC-005: Step progression
+
+- Updated docs/PHASE4_NOTES.md:
+  - Section 4.5: KYC flow implementation, placeholders, storage planning
+  - ETL documentation reference
+  - Future improvements (camera integration, storage upload, audit status)
+
+Acceptance:
+- [x] OSRM migration + RPC created
+- [x] Batch query with LRU cache implemented
+- [x] Stage1 de-duplicates H3 pairs
+- [x] KYC 9-step flow with validation
+- [x] Storage service skeleton + bucket planning
+- [x] Unit tests pass (3 batch + 5 KYC = 8 total)
+- [x] ETL and storage planning documented
+- [x] No docs/archive/ modifications
+
+Known gaps (documented):
+- OSRM data not imported (table empty, fallback active)
+- Camera/file picker not integrated (Toast placeholder)
+- Storage upload returns mock URLs (TODO: actual uploadBinary)
+- KYC status tracking not implemented
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Tests:
+cd packages/core_data && dart test test/batch_eta_dedup_test.dart test/kyc_validation_test.dart
+
+Migration (when ready):
+supabase db push
+# Then run ETL from infra/seed/h3_distance_etl_example.md
+

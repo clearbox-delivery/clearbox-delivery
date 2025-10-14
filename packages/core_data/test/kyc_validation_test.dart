@@ -7,7 +7,7 @@ void main() {
     test('TC-COU-KYC-001: Name is required', () {
       final name = '';
       expect(name.trim().isEmpty, true);
-      
+
       final validName = '王小明';
       expect(validName.trim().isNotEmpty, true);
     });

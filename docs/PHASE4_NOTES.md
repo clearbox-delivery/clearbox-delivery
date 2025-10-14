@@ -295,32 +295,48 @@
     - `order-photos/{orderId}/{photoType}.jpg`
     - `menu-photos/{merchantId}/{itemId}.jpg`
 
-#### 暫行方案（拍照/上傳）
-- **拍照功能**：
-  - 當前為 Toast 占位（「拍照/上傳功能開發中」）
-  - 模擬上傳：設定 `documents[key] = 'mock_url'`
-  - 顯示「已上傳」狀態（綠色 check icon）
-- **StorageService**：
-  - 當前回傳 mock URL（`https://mock-storage.supabase.co/...`）
-  - TODO 註解標示實際 `storage.from('bucket').uploadBinary()` 程式碼
-- **開發期間替代**：
-  - Web/桌面：使用 file picker（`file_picker` package）
-  - Mobile：使用相機（`image_picker` package）
-  - Dev 模式：允許使用既有照片
+#### 實作狀態（拍照/上傳）
+- **拍照功能**（已實作）：
+  - Web：`FilePicker.platform.pickFiles(type: FileType.image)`
+  - Mobile：`ImagePicker.pickImage(source: camera/gallery)`
+  - 對話框選擇：拍照 vs 從相簿選擇
+  - 讀取 bytes 與副檔名
+- **StorageService**（已實作）：
+  - `storage.from('kyc-documents').uploadBinary(path, fileBytes)`
+  - FileOptions: `upsert: true`, `contentType: image/*`
+  - 回傳 public URL
+  - 錯誤處理：bucket 不存在時回傳 null（UI 顯示錯誤 Toast）
+- **上傳流程**：
+  - 選擇/拍攝照片 → Toast「上傳中...」→ 呼叫 StorageService
+  - 成功：更新 state + Toast「上傳成功」+ 顯示綠色 check icon
+  - 失敗：Toast「上傳失敗，請重試（Storage bucket 可能尚未建立）」
 
-#### Storage Bucket 規劃
+#### Storage Bucket 實作（已完成）
+- **Migration**：`infra/supabase/migrations/20250115000001_storage_buckets.sql`
 - **kyc-documents**（KYC 證件）：
   - 路徑：`{courierId}/{documentType}.{ext}`
-  - RLS：僅本人與管理員可讀寫
-  - 檔案類型：jpg, png（最大 5MB）
+  - 大小限制：5MB
+  - MIME types：`image/jpeg`, `image/png`, `image/jpg`
+  - RLS：
+    - INSERT: Couriers can upload to own folder (`foldername[1] = auth.uid()`)
+    - SELECT: Couriers can read own documents
+    - UPDATE: Couriers can update own documents
+    - TODO: Admin role policy for reading all
   - 用途：審核外送員資格
 - **order-photos**（訂單照片）：
   - 路徑：`{orderId}/{photoType}.jpg`
-  - RLS：訂單相關角色可讀（courier/merchant/customer）
+  - 大小限制：10MB
+  - RLS：
+    - INSERT: Courier assigned to order can upload
+    - SELECT: Order participants (courier/merchant/customer) can read
   - 用途：到店驗證、送達驗證
 - **menu-photos**（菜單照片）：
   - 路徑：`{merchantId}/{itemId}.jpg`
-  - RLS：公開可讀，商家可寫
+  - 大小限制：5MB
+  - Public：true（公開可讀）
+  - RLS：
+    - INSERT/UPDATE: Merchant owns the folder
+    - SELECT: Public
   - 用途：菜單品項展示
 
 #### 測試
@@ -333,22 +349,24 @@
   - TC-COU-KYC-005: 步驟進退驗證
 
 #### 未來改進
-- **拍照整合**：
-  - Web：`file_picker` package（選擇既有檔案）
-  - Mobile：`image_picker` package（相機拍攝）
+- **圖片優化**：
   - 壓縮與裁切（`image` package）
-- **Storage 實際上傳**：
-  - 取消 TODO 註解，啟用 `storage.uploadBinary()`
-  - 回傳實際 public URL
-  - 錯誤處理與重試
+  - 自動旋轉與方向校正
+  - 縮圖產生（加速載入）
 - **審核狀態**：
   - `couriers` 表新增 `kyc_status` 欄位（pending/approved/rejected）
-  - `kyc_documents` 表記錄所有上傳檔案
+  - `kyc_documents` 表記錄所有上傳檔案（URL、上傳時間、審核狀態）
   - 審核駁回通知與重新上傳流程
+  - Account 頁顯示審核狀態與進度
 - **安全性**：
-  - 照片加浮水印
-  - 敏感資料加密儲存
+  - 照片加浮水印（防盜用）
+  - 敏感資料模糊處理（顯示時）
   - 審核後自動刪除或移至歸檔 bucket
+  - 管理員角色 RLS policy
+- **UX 優化**：
+  - 上傳進度條
+  - 照片預覽與重拍
+  - 批量上傳（多張一次）
 
 ---
 
@@ -485,5 +503,5 @@
 
 ---
 
-**版本**：Phase 4.5 KYC 流程骨架完成  
+**版本**：Phase 4.5 KYC 流程骨架完成
 **更新日期**：2025-01-15
