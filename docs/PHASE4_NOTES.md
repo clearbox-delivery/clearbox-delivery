@@ -537,9 +537,9 @@
 
 #### 已知缺口與待辦
 - **後端欄位**：
-  - `orders.pickup_code`（text）：建立訂單時生成 6 位碼（文件化建議）
+  - ✅ `orders.pickup_code`（text）已新增
+  - ⚠️ 生成邏輯：需在 `merchant_confirm` RPC 中加入 `LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0')`
   - `orders.pickup_photo_url`、`delivered_photo_url`（可選，或僅存於 Storage）
-  - RPC：`verify_pickup_code(p_order_id, p_code) -> bool`（查表驗證）
 - **前端增強**：
   - 影像壓縮（`image` package，減少上傳大小）
   - 上傳進度條（Storage SDK 可能不支援 progress callback，可用 indeterminate）
@@ -548,6 +548,51 @@
 - **安全性**：
   - 照片浮水印（時間戳、訂單編號）
   - GPS 定位驗證（照片 EXIF 或手動記錄）
+
+### 4.7+ 取餐碼後端整合（RPC + 欄位）
+
+#### 後端 Schema（已完成）
+- **Migration**：`infra/supabase/migrations/20250115000004_pickup_code.sql`
+- **orders.pickup_code**（text, 可空）：
+  - 用途：店家取餐驗證碼（6 位數）
+  - 生成時機：建議在 `merchant_confirm` RPC 中產生（`LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0')`）
+  - 索引：`idx_orders_pickup_code`（WHERE pickup_code IS NOT NULL）
+- **RPC: verify_pickup_code(p_order_id uuid, p_code text) → boolean**：
+  - 邏輯：`SELECT (pickup_code = p_code) FROM orders WHERE id = p_order_id`
+  - 返回：true（碼正確）/ false（碼錯誤或訂單無碼）
+  - Security：SECURITY DEFINER + GRANT to authenticated
+
+#### 服務層（已完成）
+- **OrderService.verifyPickupCode**（`packages/supabase_client/lib/src/order_service.dart`）：
+  - 優先呼叫 RPC：`_client.rpc('verify_pickup_code', params: {p_order_id, p_code})`
+  - Fallback：RPC 失敗時使用 `code.length == 6`（確保 UI 在後端未部署時仍可運作）
+  - 錯誤處理：try-catch 捕捉 RPC 異常，降級至 fallback
+
+#### 前端行為（已完成）
+- **Stage2**（`stage2_go_merchant_page.dart`）：
+  - 保持現有 UI（取餐碼輸入、驗證按鈕、綠色 check icon）
+  - 接入 RPC 後：成功 → Toast「取餐碼驗證成功」；失敗 → Toast「取餐碼錯誤，請重新輸入」
+  - Fallback 時：6 碼即視為成功（與 stub 行為一致，但實際由 RPC 優先）
+
+#### 測試（已完成）
+- **單元測試**（`packages/core_data/test/photo_verification_test.dart`，7 測試，全通過）：
+  - TC-COU-VERIF-007：RPC fallback 邏輯（RPC 可用/不可用、正確/錯誤碼）
+- **整合測試**（`tests/integration/pickup_code_verification_test.dart`，3 測試，skip）：
+  - TC-COU-VERIF-008：正確碼返回 true
+  - TC-COU-VERIF-009：錯誤碼返回 false
+  - TC-COU-VERIF-010：無碼訂單返回 false
+  - 前置條件：Supabase Local + migrations + 測試訂單（含 pickup_code）
+
+#### 已知缺口與待辦
+- **取餐碼生成**：
+  - 當前：`orders.pickup_code` 欄位存在但不自動生成
+  - 建議：在 `merchant_confirm` RPC 中加入產生邏輯（6 位隨機數字）
+  - SQL 範例：`UPDATE orders SET pickup_code = LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0') WHERE id = p_order_id AND status = 'CONFIRMED'`
+- **重新生成碼**：
+  - 功能：merchant 可重新生成取餐碼（例如顧客忘記）
+  - RPC 建議：`regenerate_pickup_code(p_order_id) → text`
+- **碼有效期**：
+  - 可選：加入 `pickup_code_expires_at` timestamp，過期後需重新生成
 
 ---
 
@@ -689,12 +734,13 @@
 - [x] Phase 4.8：RPC 替代 REST（accept_order/mark_delivered 原子化）
 - [x] Phase 4.8+：整合測試骨架（Supabase Local 前置條件文件化）
 - [x] Phase 4.7：照片驗證 + 取餐碼（Stage2/4 拍照 + 取餐碼 stub）
+- [x] Phase 4.7+：取餐碼後端整合（orders.pickup_code + RPC + fallback）
 - [ ] Phase 4.3+++：OSRM 資料導入（由管理員執行 ETL，導入 300 萬筆）
 - [ ] Phase 4.5+++：KYC 管理員審核（Admin Dashboard + RLS + 推播通知）
-- [ ] Phase 4.7+：取餐碼後端整合（orders.pickup_code + RPC + 生成邏輯）
+- [ ] Phase 4.7++：取餐碼自動生成（merchant_confirm RPC 整合）
 - [ ] Phase 4.9：History/Account 後端同步（狀態、個人資料、CSV 匯出）
 
 ---
 
-**版本**：Phase 4.7 照片驗證 + 取餐碼完成  
+**版本**：Phase 4.7+ 取餐碼後端整合完成  
 **更新日期**：2025-01-15

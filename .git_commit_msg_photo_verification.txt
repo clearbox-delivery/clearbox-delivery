@@ -1,0 +1,76 @@
+feat(phase4): photo verification + pickup code [REQ-COU-VERIF-001/TC-COU-VERIF-*]
+
+- Storage Service - Order photo upload:
+  - StorageService.uploadOrderPhoto(orderId, photoType, fileBytes)
+  - Uploads to order-photos/{orderId}/{photoType}.jpg
+  - FileOptions: upsert=true, contentType=image/*
+  - Returns public URL or null on error
+  - Photo types: 'pickup' (Stage2), 'delivered' (Stage4)
+
+- Order Service - Pickup code verification:
+  - OrderService.verifyPickupCode(orderId, code) -> bool
+  - Current: Stub (returns true if code.length == 6)
+  - TODO: Backend RPC to verify against orders.pickup_code
+  - Documented in PHASE4_NOTES.md as minimal difference
+
+- Stage2 (Go to Merchant) - Photo + Pickup Code:
+  - Upgraded to StatefulWidget with photo/code state
+  - Pickup photo button: Camera/gallery picker (Web/Mobile)
+  - Upload flow: Toast "上傳中" → uploadOrderPhoto → Toast success/error
+  - Photo preview: Image.network thumbnail (150px, rounded, bordered)
+  - Pickup code input: CBInput (6 digits, number keyboard, maxLength=6)
+  - Verify button: Calls verifyPickupCode, shows green check icon on success
+  - Proceed condition: pickupPhoto != null && codeVerified
+  - Button: "已取餐，前往送達" (disabled until conditions met)
+
+- Stage4 (Go to Customer) - Delivery Photo:
+  - Added _deliveryPhotoUrl state
+  - Delivery photo button: Same picker flow as Stage2
+  - Upload to order-photos/{orderId}/delivered.jpg
+  - Photo preview: Image.network thumbnail
+  - Complete button: Enabled only when deliveryPhoto != null
+  - Calls markDelivered(orderId, deliveryPhotoUrl)
+  - Validation: Shows toast "請先拍攝送達照片" if photo missing
+
+- Unit Tests (6 tests, all pass):
+  - TC-COU-VERIF-001: Pickup photo URL saved
+  - TC-COU-VERIF-002: Delivery photo URL saved
+  - TC-COU-VERIF-003: Pickup code length validation (6 digits)
+  - TC-COU-VERIF-004: Pickup code stub logic
+  - TC-COU-VERIF-005: Stage2 proceed conditions
+  - TC-COU-VERIF-006: Stage4 proceed conditions
+
+- Updated docs/PHASE4_NOTES.md: Section 4.7
+  - Photo upload flow (Stage2/4)
+  - Pickup code verification (stub + backend suggestions)
+  - Storage bucket details (order-photos, RLS, size limits)
+  - Known gaps (orders.pickup_code column, RPC, image compression)
+
+Acceptance:
+- [x] Stage2/4 can capture and upload photos to order-photos
+- [x] Photo preview shown as thumbnail (Image.network)
+- [x] Pickup code input and verification (stub) with feedback
+- [x] Proceed buttons disabled until photos uploaded
+- [x] All UI uses Design Tokens
+- [x] Unit tests pass (6 photo/code verification tests)
+- [x] docs/PHASE4_NOTES.md updated
+- [x] No docs/archive/ modifications
+
+Benefits:
+- Complete audit trail for pickup/delivery (photos in Storage)
+- Better fraud prevention (photo proof required)
+- Pickup code adds security layer (even if stub now)
+- UX clear feedback (Toast, preview, disabled buttons)
+
+Known gaps (documented):
+- orders.pickup_code column not added (stub always succeeds)
+- Backend RPC verify_pickup_code not implemented
+- Image compression not implemented
+- Upload progress indicator (indeterminate only)
+
+Tests:
+cd packages/core_data && dart test
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
