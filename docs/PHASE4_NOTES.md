@@ -193,13 +193,25 @@
 
 ### 4.3 服務層整合
 
-#### OrderService
+#### OrderService（已升級為 RPC）
 - **位置**：`packages/supabase_client/lib/src/order_service.dart`
 - **方法**：
-  - `acceptOrder(orderId)`: REST `UPDATE` + 樂觀鎖（`.eq('status', WAITING_COURIER)`）
-  - `markDelivered(orderId)`: REST `UPDATE status = DELIVERED`
+  - `acceptOrder(orderId)`: 呼叫 RPC `accept_order`（原子操作 + 衝突處理）
+  - `markDelivered(orderId, deliveryPhotoUrl?)`: 呼叫 RPC `mark_delivered`（含 courier 驗證）
   - `getCourierHistory(courierId, from?, to?)`: 查詢已完成/取消訂單
-- **TODO**：切換為 RPC（原子操作、照片/簽收驗證）
+
+#### Courier RPCs（已實作）
+- **Migration**：`infra/supabase/migrations/20250115000002_courier_rpcs.sql`
+- **accept_order(p_order_id UUID)**：
+  - 原子更新：`status = COURIER_ASSIGNED`, `courier_id = auth.uid()`
+  - 樂觀鎖：僅當 `status = WAITING_COURIER AND courier_id IS NULL`
+  - 返回：`{success: bool, order?: object, error_code?: string, message?: string}`
+  - 錯誤碼：`ERR_ALREADY_ASSIGNED`（訂單已被接單或不可用）
+- **mark_delivered(p_order_id UUID, p_delivery_photo_url TEXT)**：
+  - 驗證：僅 assigned courier 可標記
+  - 狀態檢查：僅 `PICKED_UP/DELIVERING` 可標記
+  - 返回：`{success: bool, order?: object, error_code?: string, message?: string}`
+  - 錯誤碼：`ERR_INVALID_STATE`（訂單狀態不正確或非本人）
 
 #### RealtimeService
 - **當前狀態**：已實作客端 map 過濾 `WAITING_COURIER`
@@ -473,9 +485,17 @@
 7. **取餐碼/簽收**：驗證流程
 8. **Google Maps 導航**：深連結整合
 9. **雙向遮罩通訊**：聯絡店家/顧客
-10. **KYC 流程**：首次登入證件上傳（7 項證件）
-11. **RPC 替代 REST**：`accept_order`/`mark_delivered` 改為 RPC
-12. **整合測試**：Supabase Local 完整路徑與 RLS
+10. **KYC 流程**：
+    - ✅ 流程骨架、真實上傳、Storage buckets + RLS
+    - TODO: 審核狀態（kyc_status/kyc_documents）、壓縮/進度條、管理員 RLS
+11. **RPC 替代 REST**：
+    - ✅ `accept_order`/`mark_delivered` RPC 已實作並接線
+    - ✅ 錯誤碼與衝突處理
+    - TODO: 其他 RPCs（merchant_confirm 等已有，可檢視是否需優化）
+12. **整合測試**：
+    - ✅ 測試骨架已建立（`tests/integration/courier_rpc_test.dart`）
+    - ⚠️ 標記 skip（需 Supabase Local 與測試資料）
+    - 文件化前置條件：supabase start、migrations、測試 JWT
 13. **History/Account 後端同步**：
     - 接單開關/推播開關未同步後端
     - 個人資料為靜態占位
@@ -494,14 +514,16 @@
 - [x] Phase 4.3++：OSRM Migration + 批量查詢 + LRU 快取 + ETL 文件
 - [x] Phase 4.6：History/Account 骨架（篩選、詳情、開關占位）
 - [x] Phase 4.5：KYC 流程骨架（Stepper + Storage 規劃 + 占位上傳）
-- [ ] Phase 4.3+++：OSRM 資料導入（執行 ETL 腳本，導入 300 萬筆距離資料）
+- [x] Phase 4.5+：KYC Storage 整合（file_picker/image_picker + 真實上傳 + RLS）
+- [x] Phase 4.8：RPC 替代 REST（accept_order/mark_delivered 原子化）
+- [x] Phase 4.8+：整合測試骨架（Supabase Local 前置條件文件化）
+- [ ] Phase 4.3+++：OSRM 資料導入（由管理員執行 ETL，導入 300 萬筆）
 - [ ] Phase 4.4+：熱度地圖完善（實際資料查詢、k=40 完整網格、定時更新）
-- [ ] Phase 4.5+：KYC Storage 整合（實際拍照/上傳、審核狀態）
-- [ ] Phase 4.7：照片驗證與取餐碼
-- [ ] Phase 4.8：RPC 替代 REST 與整合測試
+- [ ] Phase 4.5++：KYC 審核狀態（kyc_status/kyc_documents、壓縮/進度條）
+- [ ] Phase 4.7：照片驗證與取餐碼（到店/送達驗證流程）
 - [ ] Phase 4.9：History/Account 後端同步（狀態、個人資料、CSV 匯出）
 
 ---
 
-**版本**：Phase 4.5 KYC 流程骨架完成
+**版本**：Phase 4.8 RPC + 整合測試骨架完成
 **更新日期**：2025-01-15

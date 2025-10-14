@@ -1,0 +1,70 @@
+feat(phase4): kyc storage integration + camera/file picker [REQ-COU-KYC-002/TC-COU-KYC-*]
+
+- File picker/camera integration:
+  - packages/supabase_client/pubspec.yaml: Added file_picker ^8.0.0, image_picker ^1.0.7
+  - apps/courier_app/lib/features/kyc/presentation/kyc_flow_page.dart:
+    - Web: FilePicker.platform.pickFiles(type: FileType.image)
+    - Mobile: ImagePicker.pickImage(source: camera/gallery) with dialog choice
+    - Read fileBytes and extension
+    - Upload flow: Pick/capture → Toast "上傳中..." → StorageService.uploadKYCDocument
+    - Success: Update state + Toast "上傳成功" + green check icon
+    - Failure: Toast with retry message (bucket may not exist)
+
+- StorageService real upload:
+  - packages/supabase_client/lib/src/storage_service.dart
+  - uploadKYCDocument: Actual storage.from('kyc-documents').uploadBinary()
+  - FileOptions: upsert=true, contentType=image/*
+  - Returns public URL on success, null on failure
+  - Error handling: Bucket not created → null (UI shows error Toast)
+
+- Storage buckets migration:
+  - infra/supabase/migrations/20250115000001_storage_buckets.sql
+  - Buckets created:
+    1. kyc-documents (private, 5MB, image/jpeg|png|jpg)
+    2. order-photos (private, 10MB, image/jpeg|png|jpg)
+    3. menu-photos (public, 5MB, image/jpeg|png|jpg)
+
+- RLS policies implemented:
+  - kyc-documents:
+    - INSERT/SELECT/UPDATE: Couriers can only access own folder (foldername[1] = auth.uid())
+    - TODO: Admin role policy for reading all documents
+  - order-photos:
+    - INSERT: Courier assigned to order
+    - SELECT: Order participants (courier/merchant/customer)
+  - menu-photos:
+    - INSERT/UPDATE: Merchant owns folder
+    - SELECT: Public (no auth required)
+
+- Updated docs/PHASE4_NOTES.md: Section 4.5 KYC
+  - Implementation status (camera/file picker integrated)
+  - Storage buckets complete with RLS policies
+  - Upload flow documented
+  - Future improvements (compression, audit status, security, UX)
+
+Acceptance:
+- [x] file_picker/image_picker dependencies added
+- [x] Platform-specific file selection (web: file picker, mobile: camera dialog)
+- [x] StorageService.uploadKYCDocument实现真实上传
+- [x] Storage buckets migration with RLS policies
+- [x] Upload flow with Toast feedback and error handling
+- [x] Green check icon shows upload success
+- [x] docs/PHASE4_NOTES.md updated
+- [x] No docs/archive/ modifications
+
+Known gaps (documented):
+- Storage buckets need to be created (run migration)
+- Image compression not implemented
+- Audit status (kyc_status field, kyc_documents table)
+- Admin role RLS policy
+- Upload progress indicator
+- Image preview before submit
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Migration (create buckets):
+supabase db push
+
+Tests:
+cd packages/core_data && dart test test/kyc_validation_test.dart
+

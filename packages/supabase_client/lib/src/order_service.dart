@@ -98,42 +98,57 @@ class OrderService {
 
   /// Courier accepts order (atomic with conflict handling)
   /// [TC-COU-ACPT-001]
+  /// [REQ-COU-FLOW-007] Use RPC for atomic operations
   Future<AcceptOrderResult> acceptOrder(String orderId) async {
     try {
-      // TODO: Backend RPC not yet available, use REST update
-      // Once backend ready, switch to RPC for atomic conflict handling
-      final response = await _client
-          .from('orders')
-          .update({'status': OrderStatus.courierAssigned.value})
-          .eq('id', orderId)
-          .eq('status', OrderStatus.waitingCourier.value) // Optimistic lock
-          .select()
-          .single();
+      final response = await _client.rpc('accept_order', params: {
+        'p_order_id': orderId,
+      }) as Map<String, dynamic>;
+
+      final success = response['success'] as bool;
+
+      if (!success) {
+        return AcceptOrderResult(
+          success: false,
+          errorCode: response['error_code'] as String?,
+          message: response['message'] as String?,
+        );
+      }
 
       return AcceptOrderResult(
         success: true,
-        order: Order.fromJson(response as Map<String, dynamic>),
+        order: Order.fromJson(response['order'] as Map<String, dynamic>),
       );
-    } on PostgrestException catch (e) {
-      if (e.code == '406' || e.message.contains('0 rows')) {
-        return AcceptOrderResult(
-          success: false,
-          errorCode: 'ERR_ALREADY_ASSIGNED',
-          message: 'Order has already been accepted by another courier',
-        );
-      }
-      rethrow;
+    } catch (e) {
+      return AcceptOrderResult(
+        success: false,
+        errorCode: 'ERR_UNKNOWN',
+        message: 'Failed to accept order: $e',
+      );
     }
   }
 
   /// Mark order as delivered
   /// [REQ-COU-FLOW-004]
-  Future<void> markDelivered({required String orderId}) async {
-    // TODO: Backend RPC not yet available, use REST update
-    await _client
-        .from('orders')
-        .update({'status': OrderStatus.delivered.value})
-        .eq('id', orderId);
+  /// [REQ-COU-FLOW-007] Use RPC for validation and atomic operation
+  Future<void> markDelivered({
+    required String orderId,
+    String? deliveryPhotoUrl,
+  }) async {
+    try {
+      final response = await _client.rpc('mark_delivered', params: {
+        'p_order_id': orderId,
+        'p_delivery_photo_url': deliveryPhotoUrl,
+      }) as Map<String, dynamic>;
+
+      final success = response['success'] as bool;
+
+      if (!success) {
+        throw Exception(response['message'] ?? 'Failed to mark as delivered');
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// Get order by ID
