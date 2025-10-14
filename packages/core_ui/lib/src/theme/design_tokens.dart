@@ -81,6 +81,20 @@ class DesignTokens {
   // ============ Animation Curves ============
 
   static const Curve easeStandard = Curves.easeOut;
+
+  // ============ Typography Stack ============
+  // [UI_GUIDELINES.md] System font stack with Noto Sans TC
+  static const List<String> fontFamilyStack = [
+    'ui-sans-serif',
+    'system-ui',
+    '-apple-system',
+    'Noto Sans TC',
+    'Segoe UI',
+    'Roboto',
+    'Arial',
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+  ];
 }
 
 /// Theme Data factory using Design Tokens
@@ -89,6 +103,7 @@ class ClearBoxTheme {
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: DesignTokens.bg,
+      fontFamily: 'Noto Sans TC', // [UI_GUIDELINES.md] Primary font family
 
       // Color Scheme
       colorScheme: const ColorScheme.light(

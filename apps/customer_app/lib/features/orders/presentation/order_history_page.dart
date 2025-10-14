@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:customer_app/widgets/app_bottom_nav.dart';
 
 /// Order history page
 class OrderHistoryPage extends ConsumerWidget {
@@ -55,28 +56,7 @@ class OrderHistoryPage extends ConsumerWidget {
           );
         },
       ),
-      bottomNavigationBar: _buildBottomNav(context),
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 1,
-      onTap: (index) {
-        if (index == 0) {
-          context.go('/new-order');
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.add_shopping_cart),
-          label: 'New Order',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.history),
-          label: 'History',
-        ),
-      ],
+      bottomNavigationBar: const AppBottomNav(currentIndex: 1),
     );
   }
 }

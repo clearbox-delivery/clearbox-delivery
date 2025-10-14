@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:supabase_client/supabase_client.dart';
+import 'package:merchant_app/widgets/app_bottom_nav.dart';
+import 'package:go_router/go_router.dart';
 
 /// 商家当前订单页面 - 4个标签页
 /// [REQ-MER-CO-001] 商家确认订单 → WAITING_COURIER
@@ -96,7 +98,7 @@ class _CurrentOrdersPageState extends ConsumerState<CurrentOrdersPage>
         unselectedItemColor: DesignTokens.textSecondary,
         onTap: (index) {
           if (index == 1) {
-            Navigator.pushNamed(context, '/menu');
+            context.go('/menu');
           }
         },
         items: const [

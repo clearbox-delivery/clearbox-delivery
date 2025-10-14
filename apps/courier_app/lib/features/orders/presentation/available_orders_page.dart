@@ -5,6 +5,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:domain/domain.dart';
 import 'package:courier_app/features/heat/presentation/heat_map_widget.dart';
+import 'package:courier_app/widgets/app_bottom_nav.dart';
 
 /// 外送员可接订单页面
 /// [REQ-COU-MATCH-003] 原子性接单
@@ -44,6 +45,7 @@ class AvailableOrdersPage extends ConsumerWidget {
           ),
         ],
       ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
     );
   }
 

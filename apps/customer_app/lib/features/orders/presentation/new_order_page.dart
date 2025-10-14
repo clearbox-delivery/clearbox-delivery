@@ -6,6 +6,7 @@ import 'package:domain/domain.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:core_data/core_data.dart';
 import 'package:customer_app/features/merchants/presentation/merchant_list_page.dart';
+import 'package:customer_app/widgets/app_bottom_nav.dart';
 
 /// 顾客下单页面
 /// [REQ-CUST-ORDER-001] 顾客自订外送费 (30-5000)

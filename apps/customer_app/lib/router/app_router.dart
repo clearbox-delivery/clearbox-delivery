@@ -5,6 +5,7 @@ import 'package:supabase_client/supabase_client.dart';
 import 'package:customer_app/features/auth/presentation/login_page.dart';
 import 'package:customer_app/features/orders/presentation/new_order_page.dart';
 import 'package:customer_app/features/orders/presentation/order_history_page.dart';
+import 'package:customer_app/features/account/presentation/account_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(currentUserProvider);
@@ -37,6 +38,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/history',
         builder: (context, state) => const OrderHistoryPage(),
+      ),
+      GoRoute(
+        path: '/account',
+        builder: (context, state) => const AccountPage(),
       ),
     ],
   );

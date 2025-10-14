@@ -75,7 +75,7 @@ class CBInput extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
-              borderSide: const BorderSide(color: DesignTokens.brand, width: 1),
+              borderSide: const BorderSide(color: DesignTokens.brand, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(DesignTokens.radiusMd),

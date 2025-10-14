@@ -9,6 +9,9 @@ export 'src/widgets/order_card.dart';
 export 'src/widgets/cb_button.dart';
 export 'src/widgets/cb_input.dart';
 export 'src/widgets/cb_card.dart';
+export 'src/widgets/cb_modal.dart';
+export 'src/widgets/cb_tabs.dart';
+export 'src/widgets/cb_toast.dart';
 export 'src/widgets/loading_indicator.dart';
 export 'src/widgets/empty_state.dart';
 

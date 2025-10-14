@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:core_data/core_data.dart';
 import 'package:supabase_client/supabase_client.dart';
+import 'package:merchant_app/widgets/app_bottom_nav.dart';
 
 /// 商家菜单管理页面
 /// [REQ-MER-MENU-001] 菜单 CRUD
@@ -30,6 +31,7 @@ class MenuManagementPage extends ConsumerWidget {
         ],
       ),
       body: _buildMenuList(context, ref, merchantId),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
     );
   }
 

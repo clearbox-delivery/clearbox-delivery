@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:geo_h3/geo_h3.dart';
+import 'package:geo_h3/geo_h3.dart' as geo;
 import 'package:latlong2/latlong.dart';
 
 /// Merchant sorting score calculation
@@ -20,14 +20,14 @@ class MerchantSortingCalculator {
     required int minMealCount,
   }) {
     // Distance score: D = exp(-d / λ)
-    final d = DistanceCalculator.calculateDistance(
+    final d = geo.DistanceCalculator.calculateDistance(
       customerLocation,
       merchantLocation,
     );
     final D = exp(-d / lambda);
 
     // Meal count score: min-max normalized
-    final R = _normalizeM ealCount(
+    final R = _normalizeMealCount(
       weeklyMealCount,
       minMealCount,
       maxMealCount,
@@ -46,7 +46,7 @@ class MerchantSortingCalculator {
   /// Calculate P95 percentile for meal counts (cap extreme values)
   static int calculateP95(List<int> mealCounts) {
     if (mealCounts.isEmpty) return 0;
-    
+
     final sorted = List<int>.from(mealCounts)..sort();
     final index = (sorted.length * 0.95).floor();
     return sorted[min(index, sorted.length - 1)];

@@ -16,17 +16,20 @@ class RealtimeService {
     required String merchantId,
     OrderStatus? status,
   }) {
-    var query = _client
+    final stream = _client
         .from('orders')
-        .stream(primaryKey: ['id'])
-        .eq('merchant_id', merchantId);
+        .stream(primaryKey: ['id']);
 
-    if (status != null) {
-      query = query.eq('status', status.value);
-    }
-
-    return query
-        .order('created_at')
+    // Some versions of supabase_flutter do not support `.eq` chaining on streams.
+    // Filter client-side to maintain compatibility.
+    return stream
+        .map((rows) => rows
+            .where((row) {
+              final matchesMerchant = row['merchant_id'] == merchantId;
+              final matchesStatus = status == null || row['status'] == status.value;
+              return matchesMerchant && matchesStatus;
+            })
+            .toList())
         .map((rows) => rows
             .map((json) => Order.fromJson(json as Map<String, dynamic>))
             .toList());
@@ -34,17 +37,18 @@ class RealtimeService {
 
   /// Watch available orders for courier
   Stream<List<Order>> watchAvailableOrders({String? h3Cell}) {
-    var query = _client
+    final stream = _client
         .from('orders')
-        .stream(primaryKey: ['id'])
-        .eq('status', OrderStatus.waitingCourier.value);
+        .stream(primaryKey: ['id']);
 
-    if (h3Cell != null) {
-      query = query.eq('h3_merchant', h3Cell);
-    }
-
-    return query
-        .order('created_at')
+    return stream
+        .map((rows) => rows
+            .where((row) {
+              final matchesStatus = row['status'] == OrderStatus.waitingCourier.value;
+              final matchesH3 = h3Cell == null || row['h3_merchant'] == h3Cell;
+              return matchesStatus && matchesH3;
+            })
+            .toList())
         .map((rows) => rows
             .map((json) => Order.fromJson(json as Map<String, dynamic>))
             .toList());
@@ -52,14 +56,19 @@ class RealtimeService {
 
   /// Watch specific order updates
   Stream<Order?> watchOrder(String orderId) {
-    return _client
+    final stream = _client
         .from('orders')
-        .stream(primaryKey: ['id'])
-        .eq('id', orderId)
-        .map((rows) {
-          if (rows.isEmpty) return null;
-          return Order.fromJson(rows.first as Map<String, dynamic>);
-        });
+        .stream(primaryKey: ['id']);
+
+    return stream.map((rows) {
+      if (rows.isEmpty) return null;
+      final match = rows.firstWhere(
+        (row) => row['id'] == orderId,
+        orElse: () => {},
+      );
+      if (match.isEmpty) return null;
+      return Order.fromJson(match as Map<String, dynamic>);
+    });
   }
 }
 

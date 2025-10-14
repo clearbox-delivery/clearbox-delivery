@@ -4,6 +4,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:core_data/core_data.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:go_router/go_router.dart';
+import 'package:domain/domain.dart';
 
 /// 菜单浏览页面
 /// 顾客选择商品并下单

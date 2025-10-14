@@ -145,7 +145,7 @@ class OTPService {
 class LocationService {
   final SupabaseClient _client;
 
-  LocationService(this _client);
+  LocationService(this._client);
 
   /// 更新外送员位置
   Future<void> updateCourierLocation({
