@@ -59,7 +59,10 @@ class PreparingTab extends ConsumerWidget {
           separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.sp4),
           itemBuilder: (context, index) {
             final order = preparingOrders[index];
-            return _PreparingCard(order: order);
+            return _PreparingCard(
+              key: Key('preparing-${order.id}'),
+              order: order,
+            );
           },
         );
       },

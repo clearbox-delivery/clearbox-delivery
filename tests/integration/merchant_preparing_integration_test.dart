@@ -131,7 +131,7 @@ void main() {
 
       final events = jsonDecode(eventsResponse.body);
       expect(events.length, greaterThan(0));
-      
+
       final event = events.last;
       expect(event['actor_type'], equals('MERCHANT'));
       expect(event['metadata']['ready_at'], isNotNull);

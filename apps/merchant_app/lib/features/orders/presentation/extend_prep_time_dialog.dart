@@ -107,44 +107,20 @@ class _ExtendPrepTimeDialogState extends ConsumerState<ExtendPrepTimeDialog> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
+                  child: CBButton(
+                    text: '+5 分鐘',
                     onPressed: _isLoading ? null : () => _handleExtend(5),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DesignTokens.warn,
-                      foregroundColor: DesignTokens.textOnInverse,
-                      padding: const EdgeInsets.symmetric(vertical: DesignTokens.sp4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
-                      ),
-                    ),
-                    child: const Text(
-                      '+5 分鐘',
-                      style: TextStyle(
-                        fontSize: DesignTokens.fsMd,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    variant: CBButtonVariant.secondary,
+                    size: CBButtonSize.large,
                   ),
                 ),
                 const SizedBox(width: DesignTokens.sp4),
                 Expanded(
-                  child: ElevatedButton(
+                  child: CBButton(
+                    text: '+10 分鐘',
                     onPressed: _isLoading ? null : () => _handleExtend(10),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DesignTokens.danger,
-                      foregroundColor: DesignTokens.textOnInverse,
-                      padding: const EdgeInsets.symmetric(vertical: DesignTokens.sp4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
-                      ),
-                    ),
-                    child: const Text(
-                      '+10 分鐘',
-                      style: TextStyle(
-                        fontSize: DesignTokens.fsMd,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    variant: CBButtonVariant.secondary,
+                    size: CBButtonSize.large,
                   ),
                 ),
               ],
