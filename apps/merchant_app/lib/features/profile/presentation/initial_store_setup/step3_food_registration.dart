@@ -5,7 +5,7 @@ import 'package:core_ui/core_ui.dart';
 /// [merchant_app_whitepaper.md Section 2 (三)]
 class Step3FoodRegistration extends StatefulWidget {
   final Function(Map<String, dynamic>) onNext;
-  
+
   const Step3FoodRegistration({super.key, required this.onNext});
 
   @override

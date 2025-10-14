@@ -5,7 +5,7 @@ import 'package:core_ui/core_ui.dart';
 /// [merchant_app_whitepaper.md Section 2 (四)]
 class Step4MenuUpload extends StatelessWidget {
   final Function(Map<String, dynamic>) onNext;
-  
+
   const Step4MenuUpload({super.key, required this.onNext});
 
   @override

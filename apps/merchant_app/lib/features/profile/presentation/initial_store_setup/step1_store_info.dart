@@ -5,7 +5,7 @@ import 'package:core_ui/core_ui.dart';
 /// [merchant_app_whitepaper.md Section 2 (一)]
 class Step1StoreInfo extends StatefulWidget {
   final Function(Map<String, dynamic>) onNext;
-  
+
   const Step1StoreInfo({super.key, required this.onNext});
 
   @override

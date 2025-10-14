@@ -5,7 +5,7 @@ import 'package:core_ui/core_ui.dart';
 /// [merchant_app_whitepaper.md Section 2 (五)]
 class Step5Bankbook extends StatefulWidget {
   final Function(Map<String, dynamic>) onNext;
-  
+
   const Step5Bankbook({super.key, required this.onNext});
 
   @override

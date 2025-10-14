@@ -30,20 +30,36 @@ class OrderService {
     return Order.fromJson(response as Map<String, dynamic>);
   }
 
-  /// Merchant confirms order
-  /// [TC-MER-CO-001]
-  Future<Order> merchantConfirmOrder({
+  /// Merchant confirms order (extended with stock and volume checks)
+  /// [TC-MER-CO-001] [merchant_app_whitepaper.md Section 4.1]
+  Future<Order> merchantConfirm({
     required String orderId,
-    required int prepTimeMinutes,
-    String? merchantNotes,
+    required bool stockOk,
+    required bool volumeOk,
+    required int prepMinutes,
+    String? note,
   }) async {
-    final response = await _client.rpc('merchant_confirm_order', params: {
+    final response = await _client.rpc('merchant_confirm', params: {
       'p_order_id': orderId,
-      'p_prep_time_minutes': prepTimeMinutes,
-      'p_merchant_notes': merchantNotes,
+      'p_stock_ok': stockOk,
+      'p_volume_ok': volumeOk,
+      'p_prep_minutes': prepMinutes,
+      'p_note': note ?? '',
     });
 
     return Order.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Merchant cancels order with reason
+  /// [merchant_app_whitepaper.md Section 4.1]
+  Future<void> merchantCancel({
+    required String orderId,
+    required String reason,
+  }) async {
+    await _client.rpc('merchant_cancel', params: {
+      'p_order_id': orderId,
+      'p_cancel_reason': reason,
+    });
   }
 
   /// Courier accepts order (atomic with conflict handling)
