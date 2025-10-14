@@ -61,6 +61,8 @@ Legend
 
 ## Phase 1 – Auth, Registration, Device Policies
 
+Status: APPROVED (policies aligned; no login-time device blocking, emulator-only block in prod)
+
 1.1 OTP registration UI (email/phone) with cooldowns and quotas
 - Files:
   - Customer: `apps/customer_app/lib/features/auth/presentation/register_flow/` (new screens: email_otp.dart, phone_otp.dart, set_password.dart)
