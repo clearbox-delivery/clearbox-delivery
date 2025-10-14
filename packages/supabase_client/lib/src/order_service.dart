@@ -62,6 +62,18 @@ class OrderService {
     });
   }
 
+  /// Merchant adjusts prep time (±5 minutes)
+  /// [merchant_app_whitepaper.md Section 4.2]
+  Future<void> merchantAdjustPrepTime({
+    required String orderId,
+    required int deltaMinutes,
+  }) async {
+    await _client.rpc('merchant_adjust_prep_time', params: {
+      'p_order_id': orderId,
+      'p_delta_minutes': deltaMinutes,
+    });
+  }
+
   /// Courier accepts order (atomic with conflict handling)
   /// [TC-COU-ACPT-001]
   Future<AcceptOrderResult> acceptOrder(String orderId) async {

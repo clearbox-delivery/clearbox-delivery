@@ -24,7 +24,7 @@ class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
 
     try {
       final orderService = ref.read(orderServiceProvider);
-      
+
       await orderService.merchantCancel(
         orderId: widget.order.id,
         reason: _selectedReason.name,

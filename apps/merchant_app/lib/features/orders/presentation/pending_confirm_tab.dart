@@ -39,7 +39,7 @@ class PendingConfirmTab extends ConsumerWidget {
         }
 
         final allOrders = snapshot.data ?? [];
-        
+
         // Filter client-side for PENDING_STORE_CONFIRM
         final pendingOrders = allOrders
             .where((o) => o.status == OrderStatus.pendingStoreConfirm)

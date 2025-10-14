@@ -34,7 +34,7 @@ class _ConfirmOrderDialogState extends ConsumerState<ConfirmOrderDialog> {
 
     try {
       final orderService = ref.read(orderServiceProvider);
-      
+
       // Call merchant_confirm RPC
       await orderService.merchantConfirm(
         orderId: widget.order.id,
@@ -192,7 +192,7 @@ class _ConfirmOrderDialogState extends ConsumerState<ConfirmOrderDialog> {
 
   Widget _buildVolumeCheck() {
     final totalItems = widget.order.items.fold<int>(0, (sum, item) => sum + item.quantity);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

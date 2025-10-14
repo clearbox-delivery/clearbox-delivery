@@ -19,8 +19,8 @@ DECLARE
 BEGIN
   -- Verify merchant owns this order
   IF NOT EXISTS (
-    SELECT 1 FROM orders 
-    WHERE id = p_order_id 
+    SELECT 1 FROM orders
+    WHERE id = p_order_id
     AND merchant_id = auth.uid()
     AND status = 'PENDING_CONFIRM'
   ) THEN
@@ -29,7 +29,7 @@ BEGIN
 
   -- Update order status and prep time
   UPDATE orders
-  SET 
+  SET
     status = 'PENDING_COURIER',
     prep_time_minutes = p_prep_minutes,
     merchant_notes = p_note,
@@ -68,8 +68,8 @@ AS $$
 BEGIN
   -- Verify merchant owns this order
   IF NOT EXISTS (
-    SELECT 1 FROM orders 
-    WHERE id = p_order_id 
+    SELECT 1 FROM orders
+    WHERE id = p_order_id
     AND merchant_id = auth.uid()
     AND status IN ('PENDING_CONFIRM', 'PENDING_COURIER')
   ) THEN
@@ -78,7 +78,7 @@ BEGIN
 
   -- Update order status
   UPDATE orders
-  SET 
+  SET
     status = 'CANCELLED_BY_MERCHANT',
     updated_at = NOW()
   WHERE id = p_order_id;
