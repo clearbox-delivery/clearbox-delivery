@@ -176,11 +176,101 @@
 
 ---
 
+### 3.5+ MenuManagement 後端整合（Phase 3.5+）
+
+本階段將 UI 骨架接線至 Supabase 後端，使用 REST API 進行資料操作。
+
+#### 資料表與欄位
+- **期望表結構**：`menu_items`
+  - 欄位：`id`, `merchant_id`, `category`, `name`, `description`, `price`, `image_url`, `volume_level`, `weight_level`, `prep_time_minutes`, `stock_quantity`, `is_available`, `created_at`, `updated_at`
+- **當前狀態**：表結構存在，MenuItem 模型已完整對應
+- **RLS 策略**：需確保商家僅能操作自己的品項（`merchant_id = auth.uid()`）
+
+#### 服務層實作
+- **位置**：`packages/supabase_client/lib/src/menu_service.dart`
+- **方法**：
+  - `getMenuByCategory(merchantId)`: REST SELECT，取得所有品項（含未上架）
+  - `getCategories(merchantId)`: 客端分組統計
+  - `createMenuItem(...)`: REST INSERT（TODO: 後續改為 RPC 強化驗證）
+  - `updateMenuItem(...)`: REST UPDATE（TODO: 後續改為 RPC）
+  - `deleteMenuItem(itemId)`: REST DELETE（TODO: 後續改為 RPC）
+- **暫行方案**：
+  - 使用 REST API 直接操作 `menu_items` 表
+  - 類別（category）為字串欄位，無獨立表
+  - 類別可見性（isVisible）暫不持久化，前端固定 `true`
+
+#### UI 接線
+- **CategoriesPage**：
+  - 從 `getCategories()` 獲取類別列表（按品項分組）
+  - 排序拖拉：顯示「待後端實作」Toast（TODO: 需後端 `sort_order` 欄位）
+  - 重新命名：顯示「待後端實作」Toast（TODO: 需獨立 `menu_categories` 表或批次更新品項）
+- **ItemsPage**：
+  - 從 `getMenuByCategory()` 獲取當前類別品項
+  - 上下架切換：呼叫 `updateMenuItem(isAvailable)`
+  - 批次刪除：迴圈呼叫 `deleteMenuItem()`
+  - Loading/Error/Toast 完整回饋
+- **EditItemPage**：
+  - 新增：呼叫 `createMenuItem()`，需 merchantId
+  - 編輯：呼叫 `updateMenuItem()`，更新所有可編輯欄位
+  - 刪除：呼叫 `deleteMenuItem()`
+  - 前端驗證：名稱不可空、price > 0、prepTime > 0、stock >= 0
+
+#### 照片上傳
+- **暫行方案**：
+  - EditItemPage 保留占位 UI（灰底 + icon）
+  - `imageUrl` 欄位可寫入，但前端未實作上傳
+- **未來改進**：
+  - Supabase Storage bucket: `menu-photos/{merchantId}/{itemId}.jpg`
+  - Web/dev: file picker → upload to Storage → 取得 public URL → 更新 `imageUrl`
+  - 產線：同上，加入圖片壓縮與尺寸限制
+
+#### 選配/加購
+- **暫行方案**：
+  - EditItemPage 僅顯示占位卡片（「開發中」）
+- **未來改進**：
+  - 新增 `menu_item_options` 表（itemId, type, name, price, isRequired, minSelection, maxSelection）
+  - UI：動態新增/刪除選項，設定必選/可選/加價
+  - 訂單邏輯：整合選項至 `order_items` 結構
+
+#### Realtime 更新
+- **暫行方案**：
+  - 頁面使用 `FutureBuilder` + 手動刷新（AppBar refresh 按鈕 / setState）
+  - 未實作 Realtime 監聽 `menu_items` 表
+- **未來改進**：
+  - 使用 `StreamBuilder` + `RealtimeService.watchMenuItems(merchantId)`
+  - 客端 map 過濾維持相容性
+
+#### 測試
+- **單元測試**（7 測試，全通過）：
+  - `packages/core_data/test/menu_item_validation_test.dart`
+  - TC-MER-MENU-VAL-001: 名稱必填
+  - TC-MER-MENU-VAL-002: 價格 > 0
+  - TC-MER-MENU-VAL-003: 備餐時間 > 0
+  - TC-MER-MENU-VAL-004: 庫存 >= 0
+  - TC-MER-MENU-VAL-005: 完整有效資料
+  - TC-MER-MENU-VAL-006: 體積等級 V1-V4
+  - TC-MER-MENU-VAL-007: 重量等級 W1-W4
+- **整合測試**（待實作）：
+  - TODO: 使用 Supabase Local 測試 CRUD 路徑
+  - TODO: RLS 負例（otherMerchantJwt 操作他人品項應失敗）
+  - 前置條件：Supabase Local 需有 `menu_items` 表與 RLS
+
+#### 已知缺口與待辦
+1. **RPC 替代 REST**：目前使用 REST INSERT/UPDATE/DELETE，後續可改 RPC 強化驗證與事務
+2. **類別管理**：無獨立 `menu_categories` 表，類別由品項 category 欄位推導；排序/重新命名需後端支援
+3. **照片上傳**：前端未實作 Storage 上傳流程
+4. **選配/加購**：UI 占位，無 DB schema
+5. **Realtime**：未實作即時監聽，依賴手動刷新
+6. **整合測試**：待 schema 確認後補齊
+
+---
+
 ## 後續待辦
 
 - [x] Phase 3.4：完成「已取貨（Picked-up）」分頁
 - [x] Phase 3.5：MenuManagement（菜單管理）CRUD 骨架（UI + mock 資料）
-- [ ] Phase 3.5+：MenuManagement 後端整合（DB schema + RPC + Storage）
+- [x] Phase 3.5+：MenuManagement 後端整合（REST API + 測試）
+- [ ] Phase 3.5++：MenuManagement 完善（RPC/Storage/Realtime/整合測試）
 - [ ] Phase 3.6：History/Account 頁面
 - [ ] Phase 4：Courier App 完整實作
 - [ ] 外送員 Profile 關聯查詢與顯示
@@ -191,9 +281,10 @@
 - [ ] 菜單照片上傳（Supabase Storage）
 - [ ] 選配/加購管理 UI 與邏輯
 - [ ] 店家營業狀態總開關與時段控制
+- [ ] 類別獨立表與排序/可見性持久化
 
 ---
 
-**版本**：Phase 3.5 MenuManagement 骨架完成  
+**版本**：Phase 3.5+ MenuManagement 後端整合完成  
 **更新日期**：2025-01-15
 

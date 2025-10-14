@@ -42,7 +42,7 @@ void main() {
       ];
 
       final pickedUp = orders.where((o) => o.status == OrderStatus.pickedUp).toList();
-      
+
       expect(pickedUp.length, 1);
       expect(pickedUp.first.id, 'o1');
       expect(pickedUp.first.status, OrderStatus.pickedUp);

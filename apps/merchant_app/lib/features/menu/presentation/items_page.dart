@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:core_data/core_data.dart';
+import 'package:supabase_client/supabase_client.dart';
 import 'package:go_router/go_router.dart';
 
 /// Menu Items List Page
@@ -19,45 +21,15 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
   final Set<String> _selectedIds = {};
   bool _isSelectionMode = false;
 
-  // Mock items for MVP skeleton
-  final List<Map<String, dynamic>> _items = [
-    {
-      'id': 'item1',
-      'name': '招牌炒飯',
-      'description': '經典蛋炒飯加料',
-      'price': 80,
-      'isAvailable': true,
-      'stock': 20,
-      'prepTimeMinutes': 10,
-      'volumeLevel': 'V2',
-      'weightLevel': 'W2',
-    },
-    {
-      'id': 'item2',
-      'name': '宮保雞丁',
-      'description': '辣度適中',
-      'price': 120,
-      'isAvailable': true,
-      'stock': 15,
-      'prepTimeMinutes': 15,
-      'volumeLevel': 'V2',
-      'weightLevel': 'W3',
-    },
-    {
-      'id': 'item3',
-      'name': '紅燒牛肉麵',
-      'description': '大份量',
-      'price': 150,
-      'isAvailable': false,
-      'stock': 0,
-      'prepTimeMinutes': 20,
-      'volumeLevel': 'V3',
-      'weightLevel': 'W4',
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final authService = ref.watch(authServiceProvider);
+    final merchantId = authService.currentUserId;
+
+    if (merchantId == null) {
+      return const Scaffold(body: Center(child: Text('請先登入')));
+    }
+
     return Scaffold(
       backgroundColor: DesignTokens.bg,
       appBar: AppBar(
@@ -66,7 +38,7 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
           if (_isSelectionMode) ...[
             IconButton(
               icon: const Icon(Icons.delete_outline),
-              onPressed: _selectedIds.isEmpty ? null : _handleBatchDelete,
+              onPressed: _selectedIds.isEmpty ? null : () => _handleBatchDelete(merchantId),
             ),
             IconButton(
               icon: const Icon(Icons.close),
@@ -84,39 +56,62 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
           ],
         ],
       ),
-      body: _items.isEmpty
-          ? CBEmptyState(
+      body: FutureBuilder<Map<String, List<MenuItem>>>(
+        future: ref.read(menuServiceProvider).getMenuByCategory(merchantId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CBLoadingIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return CBErrorState(
+              title: '載入失敗',
+              description: snapshot.error.toString(),
+              actionLabel: '重試',
+              onAction: () => setState(() {}),
+            );
+          }
+
+          final menuMap = snapshot.data ?? {};
+          final items = menuMap[widget.category['name']] ?? [];
+
+          if (items.isEmpty) {
+            return CBEmptyState(
               icon: Icons.restaurant_outlined,
               title: '尚無餐點',
               description: '點擊右上角新增餐點',
               actionLabel: '新增餐點',
               onAction: () => _navigateToEditItem(null),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(DesignTokens.sp4),
-              itemCount: _items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.sp3),
-              itemBuilder: (context, index) {
-                final item = _items[index];
-                final isSelected = _selectedIds.contains(item['id']);
+            );
+          }
 
-                return _ItemCard(
-                  key: Key('item-${item['id']}'),
-                  item: item,
-                  isSelectionMode: _isSelectionMode,
-                  isSelected: isSelected,
-                  onTap: () {
-                    if (_isSelectionMode) {
-                      _toggleSelection(item['id']);
-                    } else {
-                      _navigateToEditItem(item);
-                    }
-                  },
-                  onToggleAvailability: (isAvailable) =>
-                      _handleToggleAvailability(index, isAvailable),
-                );
-              },
-            ),
+          return ListView.separated(
+            padding: const EdgeInsets.all(DesignTokens.sp4),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.sp3),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final isSelected = _selectedIds.contains(item.id);
+
+              return _ItemCard(
+                key: Key('item-${item.id}'),
+                item: item,
+                isSelectionMode: _isSelectionMode,
+                isSelected: isSelected,
+                onTap: () {
+                  if (_isSelectionMode) {
+                    _toggleSelection(item.id);
+                  } else {
+                    _navigateToEditItem(item);
+                  }
+                },
+                onToggleAvailability: (isAvailable) =>
+                    _handleToggleAvailability(item, isAvailable),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -144,52 +139,82 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
     });
   }
 
-  void _handleToggleAvailability(int index, bool isAvailable) {
-    setState(() {
-      _items[index]['isAvailable'] = isAvailable;
-    });
+  Future<void> _handleToggleAvailability(MenuItem item, bool isAvailable) async {
+    try {
+      await ref.read(menuServiceProvider).updateMenuItem(
+        itemId: item.id,
+        isAvailable: isAvailable,
+      );
 
-    CBToast.show(
-      context: context,
-      message: isAvailable ? '已上架' : '已下架',
-      type: CBToastType.success,
-    );
+      if (mounted) {
+        setState(() {}); // Refresh
+        CBToast.show(
+          context: context,
+          message: isAvailable ? '已上架' : '已下架',
+          type: CBToastType.success,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        CBToast.show(
+          context: context,
+          message: '操作失敗: $e',
+          type: CBToastType.error,
+        );
+      }
+    }
   }
 
-  void _handleBatchDelete() {
-    showDialog(
+  Future<void> _handleBatchDelete(String merchantId) async {
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('批次刪除'),
         content: Text('確定要刪除 ${_selectedIds.length} 個餐點嗎？'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('取消'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _items.removeWhere((item) => _selectedIds.contains(item['id']));
-                _selectedIds.clear();
-                _isSelectionMode = false;
-              });
-              Navigator.pop(context);
-              CBToast.show(
-                context: context,
-                message: '餐點已刪除',
-                type: CBToastType.success,
-              );
-            },
+            onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: DesignTokens.danger),
             child: const Text('刪除'),
           ),
         ],
       ),
     );
+
+    if (confirm == true) {
+      try {
+        for (final id in _selectedIds) {
+          await ref.read(menuServiceProvider).deleteMenuItem(id);
+        }
+
+        if (mounted) {
+          setState(() {
+            _selectedIds.clear();
+            _isSelectionMode = false;
+          });
+          CBToast.show(
+            context: context,
+            message: '餐點已刪除',
+            type: CBToastType.success,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          CBToast.show(
+            context: context,
+            message: '刪除失敗: $e',
+            type: CBToastType.error,
+          );
+        }
+      }
+    }
   }
 
-  void _navigateToEditItem(Map<String, dynamic>? item) {
+  void _navigateToEditItem(MenuItem? item) {
     context.push('/menu/items/edit', extra: {
       'category': widget.category,
       'item': item,
@@ -198,7 +223,7 @@ class _ItemsPageState extends ConsumerState<ItemsPage> {
 }
 
 class _ItemCard extends StatelessWidget {
-  final Map<String, dynamic> item;
+  final MenuItem item;
   final bool isSelectionMode;
   final bool isSelected;
   final VoidCallback onTap;
@@ -248,7 +273,7 @@ class _ItemCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item['name'],
+                  item.name,
                   style: const TextStyle(
                     fontSize: DesignTokens.fsMd,
                     fontWeight: FontWeight.w600,
@@ -257,7 +282,7 @@ class _ItemCard extends StatelessWidget {
                 ),
                 const SizedBox(height: DesignTokens.sp1),
                 Text(
-                  'NT\$${item['price']}',
+                  'NT\$${item.price.toStringAsFixed(0)}',
                   style: const TextStyle(
                     fontSize: DesignTokens.fsMd,
                     fontWeight: FontWeight.w500,
@@ -267,13 +292,17 @@ class _ItemCard extends StatelessWidget {
                 const SizedBox(height: DesignTokens.sp2),
                 Row(
                   children: [
-                    _buildTag('庫存 ${item['stock']}', DesignTokens.textMuted),
+                    _buildTag('庫存 ${item.stockQuantity ?? 0}', DesignTokens.textMuted),
                     const SizedBox(width: DesignTokens.sp2),
-                    _buildTag('${item['prepTimeMinutes']}分', DesignTokens.textSecondary),
-                    const SizedBox(width: DesignTokens.sp2),
-                    _buildTag(item['volumeLevel'], DesignTokens.brand),
-                    const SizedBox(width: DesignTokens.sp2),
-                    _buildTag(item['weightLevel'], DesignTokens.accent),
+                    _buildTag('${item.prepTimeMinutes ?? 15}分', DesignTokens.textSecondary),
+                    if (item.volumeLevel != null) ...[
+                      const SizedBox(width: DesignTokens.sp2),
+                      _buildTag(item.volumeLevel!, DesignTokens.brand),
+                    ],
+                    if (item.weightLevel != null) ...[
+                      const SizedBox(width: DesignTokens.sp2),
+                      _buildTag(item.weightLevel!, DesignTokens.accent),
+                    ],
                   ],
                 ),
               ],
@@ -283,7 +312,7 @@ class _ItemCard extends StatelessWidget {
           // Availability toggle
           if (!isSelectionMode)
             Switch(
-              value: item['isAvailable'],
+              value: item.isAvailable,
               onChanged: onToggleAvailability,
               activeColor: DesignTokens.brand,
             ),
@@ -312,4 +341,3 @@ class _ItemCard extends StatelessWidget {
     );
   }
 }
-

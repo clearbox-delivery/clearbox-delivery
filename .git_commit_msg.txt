@@ -1,0 +1,43 @@
+feat(phase3): menu management CRUD skeleton + picked-up filter tests [REQ-MER-MENU-001/TC-MER-MENU-*]
+
+- Added PICKED_UP filtering unit tests (4 tests, all pass)
+  - TC-MER-CO-FILTER-001: Basic filtering
+  - TC-MER-CO-FILTER-002: fromString parsing
+  - TC-MER-CO-FILTER-003: Empty list handling
+  - TC-MER-CO-FILTER-004: Multiple picked-up orders
+
+- Implemented MenuManagement 3-tier UI skeleton:
+  - CategoriesPage: List/reorder/toggle visibility/CRUD (mock data)
+  - ItemsPage: Item list with thumbnail/price/stock/prep-time/volume-weight tags, batch selection
+  - EditItemPage: Full form (name/price/description/prep-time/volume-weight levels/stock/photo-upload placeholder/options placeholder)
+
+- Routing: /menu -> /menu/items -> /menu/items/edit (nested go_router)
+
+- Design Tokens compliance: All colors/spacing/typography use DesignTokens, CBButton/CBInput/CBCard/CBToast
+
+- Mock data & placeholders:
+  - Categories/items stored in local state (no backend persistence)
+  - Reorder updates UI only (Toast: "待後端實作")
+  - Photo upload: gray placeholder UI
+  - Options/add-ons: placeholder card ("開發中")
+
+- Validation: Name required, price > 0, prep time > 0
+- User feedback: Toast for all actions (save/delete/toggle), Loading states, Error messages
+
+- Updated docs/PHASE3_NOTES.md: Section 3.5 MenuManagement (temporary data sources, missing backend integration, future DB schema/RPC/Storage)
+- Updated docs/implementation_plan.md: Phase 3 note links to PHASE3_NOTES for MenuManagement
+
+Acceptance:
+- [x] PICKED_UP filtering tests pass (4/4)
+- [x] MenuManagement pages navigable and render
+- [x] Form fields complete (can use placeholders)
+- [x] All UI uses Design Tokens (no hardcoded colors/spacing)
+- [x] Main actions show feedback (Toast/Loading/Disable)
+- [x] Errors visible (Toast)
+- [x] docs/PHASE3_NOTES.md updated with minimal diffs
+- [x] docs/implementation_plan.md references PHASE3_NOTES
+- [x] No docs/archive/ modifications
+
+Local startup (Merchant App, 5101):
+flutter run -d chrome --web-port 5101 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+

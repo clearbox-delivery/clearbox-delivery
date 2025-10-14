@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:core_data/core_data.dart';
+import 'package:supabase_client/supabase_client.dart';
 
 /// Edit Menu Item Page
 /// [merchant_app_whitepaper.md Section 7.3]
 /// [REQ-MER-MENU-003] Full item form with name, price, photo, description, prep time, volume/weight levels, options, stock
 class EditItemPage extends ConsumerStatefulWidget {
   final Map<String, dynamic> category;
-  final Map<String, dynamic>? item;
+  final MenuItem? item;
 
   const EditItemPage({
     super.key,
@@ -36,22 +38,22 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
   void initState() {
     super.initState();
     final item = widget.item;
-    _nameController = TextEditingController(text: item?['name']);
-    _descController = TextEditingController(text: item?['description']);
+    _nameController = TextEditingController(text: item?.name);
+    _descController = TextEditingController(text: item?.description);
     _priceController = TextEditingController(
-      text: item?['price']?.toString() ?? '',
+      text: item?.price.toStringAsFixed(0) ?? '',
     );
     _prepTimeController = TextEditingController(
-      text: item?['prepTimeMinutes']?.toString() ?? '15',
+      text: (item?.prepTimeMinutes ?? 15).toString(),
     );
     _stockController = TextEditingController(
-      text: item?['stock']?.toString() ?? '50',
+      text: (item?.stockQuantity ?? 50).toString(),
     );
 
     if (item != null) {
-      _volumeLevel = item['volumeLevel'] ?? 'V1';
-      _weightLevel = item['weightLevel'] ?? 'W1';
-      _isAvailable = item['isAvailable'] ?? true;
+      _volumeLevel = item.volumeLevel ?? 'V1';
+      _weightLevel = item.weightLevel ?? 'W1';
+      _isAvailable = item.isAvailable;
     }
   }
 
@@ -384,19 +386,71 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
       return;
     }
 
-    setState(() => _isLoading = true);
-
-    // TODO: Implement backend save
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      Navigator.pop(context);
+    final stock = int.tryParse(_stockController.text);
+    if (stock == null || stock < 0) {
       CBToast.show(
         context: context,
-        message: widget.item == null ? '餐點已新增' : '餐點已更新',
-        type: CBToastType.success,
+        message: '請輸入有效庫存數量',
+        type: CBToastType.error,
       );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      final merchantId = authService.currentUserId!;
+      final menuService = ref.read(menuServiceProvider);
+
+      if (widget.item == null) {
+        // 新增
+        await menuService.createMenuItem(
+          merchantId: merchantId,
+          category: widget.category['name'],
+          name: _nameController.text.trim(),
+          description: _descController.text.trim(),
+          price: price,
+          volumeLevel: _volumeLevel,
+          weightLevel: _weightLevel,
+          prepTimeMinutes: prepTime,
+          stockQuantity: stock,
+        );
+      } else {
+        // 更新
+        await menuService.updateMenuItem(
+          itemId: widget.item!.id,
+          name: _nameController.text.trim(),
+          description: _descController.text.trim(),
+          price: price,
+          isAvailable: _isAvailable,
+          volumeLevel: _volumeLevel,
+          weightLevel: _weightLevel,
+          prepTimeMinutes: prepTime,
+          stockQuantity: stock,
+        );
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        CBToast.show(
+          context: context,
+          message: widget.item == null ? '餐點已新增' : '餐點已更新',
+          type: CBToastType.success,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        CBToast.show(
+          context: context,
+          message: '儲存失敗: $e',
+          type: CBToastType.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -421,14 +475,26 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
     );
 
     if (confirm == true && mounted) {
-      // TODO: Implement backend delete
-      Navigator.pop(context);
-      CBToast.show(
-        context: context,
-        message: '餐點已刪除',
-        type: CBToastType.success,
-      );
+      try {
+        await ref.read(menuServiceProvider).deleteMenuItem(widget.item!.id);
+
+        if (mounted) {
+          Navigator.pop(context);
+          CBToast.show(
+            context: context,
+            message: '餐點已刪除',
+            type: CBToastType.success,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          CBToast.show(
+            context: context,
+            message: '刪除失敗: $e',
+            type: CBToastType.error,
+          );
+        }
+      }
     }
   }
 }
-

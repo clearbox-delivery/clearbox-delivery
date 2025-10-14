@@ -27,6 +27,7 @@ class MenuService {
 
   /// 创建菜单项
   Future<MenuItem> createMenuItem({
+    required String merchantId,
     required String category,
     required String name,
     String? description,
@@ -34,18 +35,24 @@ class MenuService {
     String? imageUrl,
     String? volumeLevel,
     String? weightLevel,
-    int prepTimeMinutes = 15,
+    int? prepTimeMinutes,
+    int? stockQuantity,
   }) async {
-    final response = await _client.rpc('create_menu_item', params: {
-      'p_category': category,
-      'p_name': name,
-      'p_description': description,
-      'p_price': price,
-      'p_image_url': imageUrl,
-      'p_volume_level': volumeLevel,
-      'p_weight_level': weightLevel,
-      'p_prep_time_minutes': prepTimeMinutes,
-    });
+    // TODO: Backend RPC not yet available, use REST insert
+    // Once backend ready, switch to RPC for better validation
+    final response = await _client.from('menu_items').insert({
+      'merchant_id': merchantId,
+      'category': category,
+      'name': name,
+      'description': description,
+      'price': price,
+      'image_url': imageUrl,
+      'volume_level': volumeLevel,
+      'weight_level': weightLevel,
+      'prep_time_minutes': prepTimeMinutes ?? 15,
+      'stock_quantity': stockQuantity ?? 50,
+      'is_available': true,
+    }).select().single();
 
     return MenuItem.fromJson(response as Map<String, dynamic>);
   }
@@ -57,34 +64,55 @@ class MenuService {
     String? description,
     double? price,
     bool? isAvailable,
+    String? volumeLevel,
+    String? weightLevel,
+    int? prepTimeMinutes,
+    int? stockQuantity,
   }) async {
-    final response = await _client.rpc('update_menu_item', params: {
-      'p_item_id': itemId,
-      'p_name': name,
-      'p_description': description,
-      'p_price': price,
-      'p_is_available': isAvailable,
-    });
+    // TODO: Backend RPC not yet available, use REST update
+    final Map<String, dynamic> updates = {};
+    if (name != null) updates['name'] = name;
+    if (description != null) updates['description'] = description;
+    if (price != null) updates['price'] = price;
+    if (isAvailable != null) updates['is_available'] = isAvailable;
+    if (volumeLevel != null) updates['volume_level'] = volumeLevel;
+    if (weightLevel != null) updates['weight_level'] = weightLevel;
+    if (prepTimeMinutes != null) updates['prep_time_minutes'] = prepTimeMinutes;
+    if (stockQuantity != null) updates['stock_quantity'] = stockQuantity;
+
+    final response = await _client
+        .from('menu_items')
+        .update(updates)
+        .eq('id', itemId)
+        .select()
+        .single();
 
     return MenuItem.fromJson(response as Map<String, dynamic>);
   }
 
   /// 删除菜单项
-  Future<bool> deleteMenuItem(String itemId) async {
-    final response = await _client.rpc('delete_menu_item', params: {
-      'p_item_id': itemId,
-    });
-
-    return response as bool;
+  Future<void> deleteMenuItem(String itemId) async {
+    // TODO: Backend RPC not yet available, use REST delete
+    await _client.from('menu_items').delete().eq('id', itemId);
   }
 
-  /// 按分类获取菜单
+  /// 按分类获取菜单（包含所有状态，由前端过滤）
   Future<Map<String, List<MenuItem>>> getMenuByCategory(
     String merchantId,
   ) async {
-    final items = await getMerchantMenu(merchantId);
-    final Map<String, List<MenuItem>> grouped = {};
+    // Fetch all items (not just available) for management
+    final response = await _client
+        .from('menu_items')
+        .select()
+        .eq('merchant_id', merchantId)
+        .order('category')
+        .order('name');
 
+    final items = (response as List)
+        .map((json) => MenuItem.fromJson(json as Map<String, dynamic>))
+        .toList();
+
+    final Map<String, List<MenuItem>> grouped = {};
     for (final item in items) {
       if (!grouped.containsKey(item.category)) {
         grouped[item.category] = [];
@@ -93,6 +121,19 @@ class MenuService {
     }
 
     return grouped;
+  }
+
+  /// 获取类别列表（按名称分组统计）
+  Future<List<Map<String, dynamic>>> getCategories(String merchantId) async {
+    final menuMap = await getMenuByCategory(merchantId);
+    return menuMap.entries.map((entry) {
+      return {
+        'id': entry.key, // Use category name as ID for now
+        'name': entry.key,
+        'itemCount': entry.value.length,
+        'isVisible': true, // TODO: Track category visibility in backend
+      };
+    }).toList();
   }
 }
 
