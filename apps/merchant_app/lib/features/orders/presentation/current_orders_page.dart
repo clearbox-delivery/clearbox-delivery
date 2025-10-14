@@ -7,6 +7,7 @@ import 'package:merchant_app/widgets/app_bottom_nav.dart';
 import 'package:merchant_app/features/orders/presentation/pending_confirm_tab.dart';
 import 'package:merchant_app/features/orders/presentation/waiting_courier_tab.dart';
 import 'package:merchant_app/features/orders/presentation/preparing_tab.dart';
+import 'package:merchant_app/features/orders/presentation/picked_up_tab.dart';
 import 'package:go_router/go_router.dart';
 
 /// 商家当前订单页面 - 4个标签页
@@ -71,10 +72,7 @@ class _CurrentOrdersPageState extends ConsumerState<CurrentOrdersPage>
           const PendingConfirmTab(),
           const WaitingCourierTab(),
           const PreparingTab(),
-          _OrdersTab(
-            merchantId: merchantId,
-            status: OrderStatus.pickedUp,
-          ),
+          const PickedUpTab(),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(context),
