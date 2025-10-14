@@ -9,7 +9,7 @@ void main() {
       // Empty name
       expect(validateName(''), false);
       expect(validateName('   '), false);
-      
+
       // Valid name
       expect(validateName('招牌炒飯'), true);
       expect(validateName(' Fried Rice '), true);
@@ -21,7 +21,7 @@ void main() {
       expect(validatePrice(0), false);
       expect(validatePrice(-10), false);
       expect(validatePrice(-0.01), false);
-      
+
       // Valid prices
       expect(validatePrice(1), true);
       expect(validatePrice(80), true);
@@ -34,7 +34,7 @@ void main() {
       expect(validatePrepTime(null), false);
       expect(validatePrepTime(0), false);
       expect(validatePrepTime(-5), false);
-      
+
       // Valid prep times
       expect(validatePrepTime(1), true);
       expect(validatePrepTime(10), true);
@@ -47,7 +47,7 @@ void main() {
       expect(validateStock(null), false);
       expect(validateStock(-1), false);
       expect(validateStock(-100), false);
-      
+
       // Valid stock (including zero)
       expect(validateStock(0), true);
       expect(validateStock(1), true);
@@ -62,7 +62,7 @@ void main() {
         'prepTime': 15,
         'stock': 50,
       };
-      
+
       expect(validateName(validItem['name'] as String), true);
       expect(validatePrice(validItem['price'] as double), true);
       expect(validatePrepTime(validItem['prepTime'] as int), true);
@@ -75,7 +75,7 @@ void main() {
       expect(validateVolumeLevel('V2'), true);
       expect(validateVolumeLevel('V3'), true);
       expect(validateVolumeLevel('V4'), true);
-      
+
       // Invalid levels
       expect(validateVolumeLevel('V0'), false);
       expect(validateVolumeLevel('V5'), false);
@@ -89,7 +89,7 @@ void main() {
       expect(validateWeightLevel('W2'), true);
       expect(validateWeightLevel('W3'), true);
       expect(validateWeightLevel('W4'), true);
-      
+
       // Invalid levels
       expect(validateWeightLevel('W0'), false);
       expect(validateWeightLevel('W5'), false);

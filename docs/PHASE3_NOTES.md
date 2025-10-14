@@ -265,26 +265,126 @@
 
 ---
 
+### 3.6 History/Account（最小差異）
+
+本階段實作 Merchant History 與 Account 頁面骨架，對齊白皮書必要欄位，部分功能以占位處理。
+
+#### History（歷史訂單）
+
+##### 功能實作
+- **時間範圍篩選**：今日/本週/本月（Chip 切換）
+  - 使用 `OrderService.getHistoricalOrders(merchantId, timeRange)`
+  - 查詢歷史狀態：DELIVERED, CANCELLED_*, EXPIRED_UNMATCHED
+- **狀態篩選**：已完成/已取消（ChoiceChip）
+  - 客端過濾 `OrderStatus`
+- **搜尋**：訂單編號部分匹配（客端 `contains`）
+- **列表卡片**：編號（前 8 碼）、下單時間、狀態標籤、餐費、外送費
+- **詳情 Sheet**：基本資訊、餐點明細、備註、時間軸占位、問題申訴/聯絡客服占位
+
+##### 暫行方案
+- **CSV 匯出**：按鈕占位 + Toast（「開發中」）
+- **時間軸**：OrderDetailsSheet 顯示占位文案（「需整合 order_events 表」）
+  - 未實作 `getOrderEvents` 的前端顯示
+- **總時長**：未計算（下單→送達），卡片未顯示
+- **付款方式**：Order 模型缺 `payment_method` 欄位，詳情未顯示
+- **顧客暱稱**：Order 模型未關聯 customer profile，卡片未顯示
+- **品項關鍵字搜尋**：未實作（僅支援訂單編號）
+
+##### 未來改進
+- 整合 `order_events` 表顯示完整時間軸
+- CSV 匯出邏輯與檔案下載
+- 計算總時長（`completed_at - created_at`）
+- Order 模型擴充關聯欄位（customer_name, payment_method）
+- 進階搜尋（品項關鍵字、顧客暱稱）
+
+#### Account（帳號管理）
+
+##### 功能實作（分段占位）
+- **8.1 店家資料**：
+  - 基本資料：Toast 占位（「編輯功能開發中」）
+  - 驗證狀態：Toast 占位
+  - 顧客端預覽：Toast 占位
+- **8.2 營業與接單**：
+  - 營業狀態 Switch：本地 state，切換顯示 Toast（「已切換為營業中/休息中」）
+  - 接受外送訂單 Switch：本地 state，切換顯示 Toast（「已恢復接單/已暫停接單」）
+  - 營業時間設定：Toast 占位
+- **8.3 通知與裝置**：
+  - 推播通知：Toast 占位
+  - 裝置安全：Toast 占位
+- **8.4 金融與文件**：
+  - 收款帳戶：Toast 占位
+  - 文件管理：Toast 占位
+- **8.5 其他**：
+  - 常見問題：Toast 占位
+  - 聯絡客服：Toast 占位
+  - 問題回報：Toast 占位
+  - 系統資訊：AlertDialog（版本 1.0.0、建置日期、環境）
+  - 清除快取：AlertDialog 確認 → Toast（「快取已清除」）
+  - 登出：AlertDialog 確認 → 呼叫 `authService.signOut()` → Toast
+
+##### 暫行方案
+- **營業狀態/接單開關**：
+  - 僅更新本地 state，不持久化至後端
+  - Toast 回饋，未實際影響訂單可見性
+- **所有子功能**：
+  - 除登出/清除快取/系統資訊外，皆為 Toast 占位
+  - 未整合實際資料查詢或寫入
+- **底部導航索引**：Account 為 index 3（需與 AppBottomNav 對齊）
+
+##### 未來改進
+- 建立 `merchant_profiles` 表儲存基本資料、營業時間、驗證狀態
+- 營業狀態/接單開關持久化至後端，影響顧客端可見性
+- 推播通知設定整合 FCM/Supabase Realtime
+- 裝置安全整合 `user_devices` 表
+- 金融帳戶管理與遮罩顯示
+- 文件上傳與審核狀態追蹤
+
+#### 測試
+- **單元測試**（5 測試，全通過）：
+  - `packages/core_data/test/merchant_history_filter_test.dart`
+  - TC-MER-HIS-FILTER-001: 歷史訂單狀態過濾
+  - TC-MER-HIS-FILTER-002: 今日時間範圍
+  - TC-MER-HIS-FILTER-003: 本週時間範圍
+  - TC-MER-HIS-FILTER-004: 訂單編號搜尋
+  - TC-MER-HIS-FILTER-005: 狀態+時間複合過濾
+- **整合測試**（待實作）：
+  - TODO: 使用 Supabase Local 測試 `getHistoricalOrders` RLS
+  - 前置條件：測試資料含不同 merchant_id 與狀態的訂單
+
+#### 已知缺口
+1. **CSV 匯出**：前端未實作下載邏輯
+2. **時間軸顯示**：未整合 `order_events` 至詳情 UI
+3. **總時長計算**：Order 模型缺 `completed_at` 欄位
+4. **顧客資訊**：Order 未關聯 customer profile（暱稱）
+5. **付款方式**：Order 模型缺 `payment_method` 欄位
+6. **Account 持久化**：營業狀態/接單開關僅為本地 state
+7. **Account 子功能**：所有編輯/設定功能皆為占位
+
+---
+
 ## 後續待辦
 
 - [x] Phase 3.4：完成「已取貨（Picked-up）」分頁
 - [x] Phase 3.5：MenuManagement（菜單管理）CRUD 骨架（UI + mock 資料）
 - [x] Phase 3.5+：MenuManagement 後端整合（REST API + 測試）
+- [x] Phase 3.6：History/Account 頁面骨架
 - [ ] Phase 3.5++：MenuManagement 完善（RPC/Storage/Realtime/整合測試）
-- [ ] Phase 3.6：History/Account 頁面
+- [ ] Phase 3.6+：History/Account 後端整合（profiles/settings/完整時間軸）
 - [ ] Phase 4：Courier App 完整實作
 - [ ] 外送員 Profile 關聯查詢與顯示
 - [ ] 即時位置與 ETA 計算整合
-- [ ] Event Sourcing 時間軸重建
+- [ ] Event Sourcing 時間軸重建與前端顯示
 - [ ] 雙向遮罩通訊系統
 - [ ] 路線地圖與問題通報工單
 - [ ] 菜單照片上傳（Supabase Storage）
 - [ ] 選配/加購管理 UI 與邏輯
 - [ ] 店家營業狀態總開關與時段控制
 - [ ] 類別獨立表與排序/可見性持久化
+- [ ] CSV 匯出邏輯與下載
+- [ ] Order 模型擴充（completed_at, payment_method, 關聯 profiles）
 
 ---
 
-**版本**：Phase 3.5+ MenuManagement 後端整合完成  
+**版本**：Phase 3.6 History/Account 骨架完成  
 **更新日期**：2025-01-15
 

@@ -199,6 +199,55 @@ class OrderService {
         .map((json) => OrderEvent.fromJson(json as Map<String, dynamic>))
         .toList();
   }
+
+  /// Get historical orders for merchant (completed, cancelled, expired)
+  /// [REQ-MER-HIS-001] [merchant_app_whitepaper.md Section 5.1]
+  Future<List<Order>> getHistoricalOrders({
+    required String merchantId,
+    required String timeRange, // 'today', 'week', 'month', 'custom'
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    // Calculate time range
+    final now = DateTime.now();
+    DateTime rangeStart;
+
+    switch (timeRange) {
+      case 'today':
+        rangeStart = DateTime(now.year, now.month, now.day);
+        break;
+      case 'week':
+        rangeStart = now.subtract(const Duration(days: 7));
+        break;
+      case 'month':
+        rangeStart = DateTime(now.year, now.month, 1);
+        break;
+      case 'custom':
+        rangeStart = startDate ?? now.subtract(const Duration(days: 30));
+        break;
+      default:
+        rangeStart = now.subtract(const Duration(days: 7));
+    }
+
+    // Query historical orders (DELIVERED, CANCELLED_*, EXPIRED_UNMATCHED)
+    final response = await _client
+        .from('orders')
+        .select()
+        .eq('merchant_id', merchantId)
+        .in_('status', [
+          OrderStatus.delivered.value,
+          OrderStatus.cancelledMerchant.value,
+          OrderStatus.cancelledCustomer.value,
+          OrderStatus.cancelledCourier.value,
+          OrderStatus.expiredUnmatched.value,
+        ])
+        .gte('created_at', rangeStart.toIso8601String())
+        .order('created_at', ascending: false);
+
+    return (response as List)
+        .map((json) => Order.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 class AcceptOrderResult {

@@ -1,0 +1,63 @@
+feat(phase3): menu management backend integration [REQ-MER-MENU-002/TC-MER-MENU-*]
+
+- Backend integration complete with REST API:
+  - MenuService updated: getMenuByCategory/getCategories/createMenuItem/updateMenuItem/deleteMenuItem
+  - Uses REST INSERT/UPDATE/DELETE (TODO: migrate to RPC for validation)
+  - Categories derived from item.category field (no separate table yet)
+
+- UI pages connected to backend:
+  - CategoriesPage: Fetches categories from MenuService, reorder/rename show "developing" toast
+  - ItemsPage: Full CRUD with availability toggle, batch delete, loading/error states
+  - EditItemPage: Create/Update/Delete with merchantId, all fields integrated, validation enforced
+
+- Form validation (7 unit tests, all pass):
+  - packages/core_data/test/menu_item_validation_test.dart
+  - TC-MER-MENU-VAL-001: Name required
+  - TC-MER-MENU-VAL-002: Price > 0
+  - TC-MER-MENU-VAL-003: Prep time > 0
+  - TC-MER-MENU-VAL-004: Stock >= 0
+  - TC-MER-MENU-VAL-005: Complete valid data
+  - TC-MER-MENU-VAL-006: Volume level V1-V4
+  - TC-MER-MENU-VAL-007: Weight level W1-W4
+
+- Design Tokens compliance: All UI uses DesignTokens, CBButton/CBInput/CBCard/CBToast
+
+- User feedback: Loading states, Toast messages (success/error), Error handling with retry
+
+- Placeholders documented:
+  - Photo upload: UI placeholder (Storage integration pending)
+  - Options/add-ons: UI placeholder (schema pending)
+  - Realtime: FutureBuilder + manual refresh (StreamBuilder pending)
+  - Category reorder/rename: Toast notification (backend support pending)
+
+- Updated docs/PHASE3_NOTES.md: Section 3.5+ MenuManagement backend integration
+  - Data table structure, service layer methods, UI wiring, placeholders, testing status
+  - Known gaps: RPC migration, category table, photo Storage, options schema, Realtime, integration tests
+
+- Updated docs/implementation_plan.md: Phase 3 note references MenuManagement integration status
+
+Acceptance:
+- [x] MenuService + MenuItem model integrated
+- [x] Pages use service layer (not mock)
+- [x] Create/Edit/Delete/Toggle availability operational with Loading/Toast
+- [x] Error visible (Toast with retry)
+- [x] All UI uses Design Tokens
+- [x] Form validation unit tests pass (7/7)
+- [x] docs/PHASE3_NOTES.md updated with 3.5+ integration status and gaps
+- [x] docs/implementation_plan.md references PHASE3_NOTES
+- [x] No docs/archive/ modifications
+
+Known gaps (documented in PHASE3_NOTES.md):
+- Integration tests pending (requires Supabase Local with menu_items table)
+- RPC migration for stronger validation
+- Category table for independent management
+- Photo upload (Storage bucket)
+- Options/add-ons (schema + UI)
+- Realtime monitoring
+
+Local startup (Merchant App, 5101):
+flutter run -d chrome --web-port 5101 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Tests:
+cd packages/core_data && dart test test/menu_item_validation_test.dart
+
