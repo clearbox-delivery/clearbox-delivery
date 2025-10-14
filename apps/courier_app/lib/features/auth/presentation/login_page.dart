@@ -61,7 +61,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             children: [
               const Icon(Icons.delivery_dining, size: 80),
               const SizedBox(height: 48),
-              
+
               TextField(
                 key: const Key('email'),
                 controller: _emailController,
@@ -72,7 +72,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               TextField(
                 controller: _passwordController,
                 obscureText: true,
@@ -82,7 +82,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -97,7 +97,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               TextButton(
                 onPressed: () {
                   Navigator.of(context).push(

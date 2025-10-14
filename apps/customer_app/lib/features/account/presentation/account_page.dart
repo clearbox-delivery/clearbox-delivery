@@ -1,136 +1,173 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:supabase_client/supabase_client.dart';
 import 'package:customer_app/widgets/app_bottom_nav.dart';
+import 'package:customer_app/features/account/presentation/notifications_page.dart';
+import 'package:customer_app/features/account/presentation/addresses_page.dart';
+import 'package:customer_app/features/account/presentation/settings_page.dart';
+import 'package:customer_app/features/account/presentation/help_center_page.dart';
 
-/// Customer Account Page
+/// Account Page
 /// [customer_app_whitepaper.md Section 6]
-/// Sections: 暱稱、Email、手機號碼、通知、地址管理、幫助中心、設定、登出
 class AccountPage extends ConsumerWidget {
   const AccountPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authService = ref.watch(authServiceProvider);
+    final user = authService.currentUser;
+
     return Scaffold(
       backgroundColor: DesignTokens.bg,
       appBar: AppBar(
         title: const Text('帳號'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(DesignTokens.sp4),
-        children: [
-          // Profile section - TODO: implement in Phase 2.6
-          CBCard(
-            child: Column(
-              children: [
-                _buildListTile(
-                  icon: Icons.person_outline,
-                  title: '暱稱',
-                  subtitle: 'TODO: 顯示暱稱',
-                  onTap: () {},
-                ),
-                const Divider(height: 1),
-                _buildListTile(
-                  icon: Icons.email_outlined,
-                  title: 'Email',
-                  subtitle: 'TODO: 顯示 Email',
-                  onTap: () {},
-                ),
-                const Divider(height: 1),
-                _buildListTile(
-                  icon: Icons.phone_outlined,
-                  title: '手機號碼',
-                  subtitle: 'TODO: 顯示手機號碼',
-                  onTap: () {},
-                ),
-              ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(DesignTokens.sp6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // User info card
+            CBCard(
+              child: Column(
+                children: [
+                  const CircleAvatar(
+                    radius: 40,
+                    backgroundColor: DesignTokens.bgSubtle,
+                    child: Icon(
+                      Icons.person,
+                      size: 40,
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.sp4),
+                  const Text(
+                    '測試顧客', // TODO: Load from user_profiles.nickname
+                    style: TextStyle(
+                      fontSize: DesignTokens.fsXl,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.sp2),
+                  Text(
+                    user?.email ?? '',
+                    style: const TextStyle(
+                      fontSize: DesignTokens.fsSm,
+                      color: DesignTokens.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: DesignTokens.sp4),
+            const SizedBox(height: DesignTokens.sp6),
 
-          // Settings section
-          CBCard(
-            child: Column(
-              children: [
-                _buildListTile(
-                  icon: Icons.notifications_outlined,
-                  title: '通知',
-                  onTap: () {},
-                ),
-                const Divider(height: 1),
-                _buildListTile(
-                  icon: Icons.location_on_outlined,
-                  title: '地址管理',
-                  onTap: () {},
-                ),
-                const Divider(height: 1),
-                _buildListTile(
-                  icon: Icons.help_outline,
-                  title: '幫助中心',
-                  onTap: () {},
-                ),
-                const Divider(height: 1),
-                _buildListTile(
-                  icon: Icons.settings_outlined,
-                  title: '設定',
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: DesignTokens.sp4),
-
-          // Logout
-          CBCard(
-            child: _buildListTile(
-              icon: Icons.logout_outlined,
-              title: '登出',
-              textColor: DesignTokens.danger,
+            // Menu items
+            _buildMenuItem(
+              context,
+              icon: Icons.notifications_outlined,
+              title: '通知',
               onTap: () {
-                // TODO: implement logout in Phase 2.6
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsPage(),
+                  ),
+                );
               },
             ),
-          ),
-        ],
+            _buildMenuItem(
+              context,
+              icon: Icons.location_on_outlined,
+              title: '地址管理',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddressesPage(),
+                  ),
+                );
+              },
+            ),
+            _buildMenuItem(
+              context,
+              icon: Icons.help_outline,
+              title: '幫助中心',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HelpCenterPage(),
+                  ),
+                );
+              },
+            ),
+            _buildMenuItem(
+              context,
+              icon: Icons.settings_outlined,
+              title: '設定',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsPage(),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: DesignTokens.sp6),
+
+            // Logout
+            CBButton(
+              text: '登出',
+              onPressed: () async {
+                await ref.read(authServiceProvider).signOut();
+                if (context.mounted) {
+                  context.go('/login');
+                }
+              },
+              variant: CBButtonVariant.secondary,
+              icon: Icons.logout,
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 2),
     );
   }
 
-  Widget _buildListTile({
+  Widget _buildMenuItem(
+    BuildContext context, {
     required IconData icon,
     required String title,
-    String? subtitle,
-    Color? textColor,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: textColor ?? DesignTokens.textSecondary),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: DesignTokens.fsMd,
-          color: textColor ?? DesignTokens.textPrimary,
-        ),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: DesignTokens.fsSm,
-                color: DesignTokens.textSecondary,
-              ),
-            )
-          : null,
-      trailing: const Icon(Icons.chevron_right, color: DesignTokens.textMuted),
+    return CBCard(
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.sp4,
-        vertical: DesignTokens.sp2,
+      margin: const EdgeInsets.only(bottom: DesignTokens.sp3),
+      child: Row(
+        children: [
+          Icon(icon, color: DesignTokens.brand),
+          const SizedBox(width: DesignTokens.sp4),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: DesignTokens.fsMd,
+                color: DesignTokens.textPrimary,
+              ),
+            ),
+          ),
+          const Icon(
+            Icons.chevron_right,
+            color: DesignTokens.textMuted,
+          ),
+        ],
       ),
     );
   }
 }
-

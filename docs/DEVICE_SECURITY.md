@@ -42,7 +42,7 @@ platform TEXT
   2. Send token to backend Edge Function `/verify-integrity`
   3. Backend calls Google Play Integrity API
   4. If `deviceIntegrity` verdict ≠ `MEETS_DEVICE_INTEGRITY`, block access
-  
+
 - **Implementation**: `flutter_play_integrity` package
 - **Fallback**: If API unavailable, allow with warning log (graceful degradation)
 

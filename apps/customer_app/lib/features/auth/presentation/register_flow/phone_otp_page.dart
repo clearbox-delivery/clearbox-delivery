@@ -24,7 +24,7 @@ class PhoneOTPPage extends ConsumerStatefulWidget {
 class _PhoneOTPPageState extends ConsumerState<PhoneOTPPage> {
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _otpSent = false;
   int _cooldownSeconds = 0;

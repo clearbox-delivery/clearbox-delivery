@@ -24,7 +24,7 @@ class EmailOTPPage extends ConsumerStatefulWidget {
 class _EmailOTPPageState extends ConsumerState<EmailOTPPage> {
   final _emailController = TextEditingController();
   final _otpController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _otpSent = false;
   int _cooldownSeconds = 0;

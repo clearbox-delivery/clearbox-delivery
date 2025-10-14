@@ -25,7 +25,7 @@ class SetPasswordPage extends ConsumerStatefulWidget {
 class _SetPasswordPageState extends ConsumerState<SetPasswordPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -59,7 +59,7 @@ class _SetPasswordPageState extends ConsumerState<SetPasswordPage> {
 
     try {
       final authService = ref.read(authServiceProvider);
-      
+
       // Sign up with email and password
       await authService.signUp(
         email: widget.email,

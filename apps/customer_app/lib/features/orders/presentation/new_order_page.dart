@@ -6,6 +6,7 @@ import 'package:domain/domain.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:core_data/core_data.dart';
 import 'package:customer_app/features/merchants/presentation/merchant_list_page.dart';
+import 'package:customer_app/features/discovery/presentation/categories_overlay.dart';
 import 'package:customer_app/widgets/app_bottom_nav.dart';
 
 /// 顾客下单页面
@@ -93,24 +94,70 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
     }
   }
 
+  void _showCategoriesOverlay() {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black.withOpacity(0.3),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return const CategoriesOverlay();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DesignTokens.bg,
       appBar: AppBar(
-        title: const Text('建立訂單'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => context.go('/history'),
-          ),
-        ],
+        title: const Text('NewOrder'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(DesignTokens.sp6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Search bar style button - opens category overlay
+            // [customer_app_whitepaper.md Section 4.1]
+            GestureDetector(
+              onTap: _showCategoriesOverlay,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.sp4,
+                  vertical: DesignTokens.sp3,
+                ),
+                decoration: BoxDecoration(
+                  color: DesignTokens.bgSubtle,
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+                  border: Border.all(color: DesignTokens.border),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.search,
+                      color: DesignTokens.textMuted,
+                      size: 20,
+                    ),
+                    const SizedBox(width: DesignTokens.sp3),
+                    const Text(
+                      '今天想吃什麼？',
+                      style: TextStyle(
+                        fontSize: DesignTokens.fsMd,
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: DesignTokens.sp6),
+
+            const Divider(),
+
+            const SizedBox(height: DesignTokens.sp6),
+
             // 选择商家按钮
             CBButton(
               text: '選擇商家',
@@ -225,37 +272,7 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(context),
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: DesignTokens.border),
-        ),
-      ),
-      child: BottomNavigationBar(
-        currentIndex: 0,
-        selectedItemColor: DesignTokens.brand,
-        unselectedItemColor: DesignTokens.textSecondary,
-        onTap: (index) {
-          if (index == 1) {
-            context.go('/history');
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_shopping_cart),
-            label: '新訂單',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: '歷史',
-          ),
-        ],
-      ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
     );
   }
 }
