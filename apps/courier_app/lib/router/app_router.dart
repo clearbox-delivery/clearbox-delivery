@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:courier_app/features/auth/presentation/login_page.dart';
 import 'package:courier_app/features/orders/presentation/available_orders_page.dart';
+import 'package:courier_app/features/orders/presentation/current_orders_page.dart';
 import 'package:courier_app/features/history/presentation/order_history_page.dart';
 import 'package:courier_app/features/account/presentation/account_page.dart';
 
@@ -33,7 +34,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/current-orders',
-        builder: (context, state) => const AvailableOrdersPage(),
+        builder: (context, state) => const CurrentOrdersPage(),
       ),
       GoRoute(
         path: '/history',

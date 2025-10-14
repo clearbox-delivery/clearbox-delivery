@@ -1,0 +1,76 @@
+feat(phase3): merchant history/account skeleton [REQ-MER-HIS-001/REQ-MER-ACC-001/TC-MER-*]
+
+- History page complete with filtering and details:
+  - Time range filters (today/week/month) using Chip UI
+  - Status filters (delivered/cancelled) with ChoiceChip
+  - Order ID search (client-side contains)
+  - List cards: order ID (first 8), created time, status badge, meal price, delivery fee
+  - OrderDetailsSheet: basic info, items, notes, timeline placeholder, support actions placeholder
+
+- OrderService extended:
+  - getHistoricalOrders(merchantId, timeRange) for DELIVERED/CANCELLED_*/EXPIRED_UNMATCHED
+  - Time range calculation (today/week/month/custom)
+  - Query with status IN filter and created_at range
+
+- Account page skeleton with all sections:
+  - 8.1 Store profile: Basic info/Verification/Customer preview (Toast placeholders)
+  - 8.2 Operations: Business status Switch (local state + Toast), Accept orders Switch (local state + Toast), Business hours (Toast placeholder)
+  - 8.3 Notifications & Devices: Push settings/Device security (Toast placeholders)
+  - 8.4 Financial & Documents: Bank account/Document management (Toast placeholders)
+  - 8.5 Other: FAQ/Support/Feedback/System info (AlertDialog)/Clear cache (AlertDialog)/Logout (authService.signOut)
+
+- Design Tokens compliance: All UI uses DesignTokens, CBButton/CBCard/CBToast/CBInput/CBLoadingIndicator/CBEmptyState/CBErrorState
+
+- User feedback: Loading states, Toast messages, Error handling with retry, AlertDialog confirmations
+
+- History filtering unit tests (5 tests, all pass):
+  - packages/core_data/test/merchant_history_filter_test.dart
+  - TC-MER-HIS-FILTER-001: Historical status filtering
+  - TC-MER-HIS-FILTER-002: Today time range
+  - TC-MER-HIS-FILTER-003: Week time range
+  - TC-MER-HIS-FILTER-004: Order ID search
+  - TC-MER-HIS-FILTER-005: Combined status + time filtering
+
+- Updated docs/PHASE3_NOTES.md: Section 3.6 History/Account
+  - History: CSV export placeholder, timeline placeholder, missing fields (total duration, payment method, customer name)
+  - Account: All sections with placeholders, local state switches, missing backend persistence
+  - Tests coverage and known gaps
+
+- Updated docs/implementation_plan.md: Phase 3 note references History/Account placeholders
+
+Placeholders documented:
+- CSV export: Button + Toast
+- Timeline: Placeholder text (needs order_events integration)
+- Total duration: Not calculated (missing completed_at)
+- Customer name: Order not joined with profiles
+- Payment method: Missing field in Order model
+- Account switches: Local state only (no backend persistence)
+- Account sub-features: Toast placeholders (basic info edit, verification, notifications, devices, financial, documents, FAQ, support, feedback)
+
+Acceptance:
+- [x] History page renders with time/status filters and search
+- [x] OrderDetailsSheet shows basic info, items, notes, timeline placeholder
+- [x] CSV export button exists with placeholder Toast
+- [x] Account page shows all sections (8.1-8.5)
+- [x] Business/order switches operational with Toast feedback
+- [x] Logout functional (authService.signOut)
+- [x] All UI uses Design Tokens
+- [x] History filtering tests pass (5/5)
+- [x] docs/PHASE3_NOTES.md updated with 3.6 placeholders and gaps
+- [x] docs/implementation_plan.md references PHASE3_NOTES
+- [x] No docs/archive/ modifications
+
+Known gaps (documented in PHASE3_NOTES.md):
+- Integration tests pending (getHistoricalOrders RLS)
+- CSV export download logic
+- Order events timeline UI integration
+- Order model extensions (completed_at, payment_method, customer relations)
+- merchant_profiles table for Account persistence
+- Notification/device/financial backend integration
+
+Local startup (Merchant App, 5101):
+flutter run -d chrome --web-port 5101 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Tests:
+cd packages/core_data && dart test test/merchant_history_filter_test.dart
+

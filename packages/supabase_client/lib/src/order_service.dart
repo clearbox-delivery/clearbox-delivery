@@ -100,16 +100,22 @@ class OrderService {
   /// [TC-COU-ACPT-001]
   Future<AcceptOrderResult> acceptOrder(String orderId) async {
     try {
-      final response = await _client.rpc('accept_order', params: {
-        'p_order_id': orderId,
-      });
+      // TODO: Backend RPC not yet available, use REST update
+      // Once backend ready, switch to RPC for atomic conflict handling
+      final response = await _client
+          .from('orders')
+          .update({'status': OrderStatus.courierAssigned.value})
+          .eq('id', orderId)
+          .eq('status', OrderStatus.waitingCourier.value) // Optimistic lock
+          .select()
+          .single();
 
       return AcceptOrderResult(
         success: true,
         order: Order.fromJson(response as Map<String, dynamic>),
       );
     } on PostgrestException catch (e) {
-      if (e.code == '409' || e.message.contains('already assigned')) {
+      if (e.code == '406' || e.message.contains('0 rows')) {
         return AcceptOrderResult(
           success: false,
           errorCode: 'ERR_ALREADY_ASSIGNED',
@@ -118,6 +124,16 @@ class OrderService {
       }
       rethrow;
     }
+  }
+
+  /// Mark order as delivered
+  /// [REQ-COU-FLOW-004]
+  Future<void> markDelivered({required String orderId}) async {
+    // TODO: Backend RPC not yet available, use REST update
+    await _client
+        .from('orders')
+        .update({'status': OrderStatus.delivered.value})
+        .eq('id', orderId);
   }
 
   /// Get order by ID

@@ -73,7 +73,7 @@ void main() {
 
     test('TC-MER-HIS-FILTER-002: Time range today filters correctly', () {
       final todayStart = DateTime(now.year, now.month, now.day);
-      
+
       final orders = [
         Order(
           id: 'o1',
@@ -107,7 +107,7 @@ void main() {
 
     test('TC-MER-HIS-FILTER-003: Time range week filters correctly', () {
       final weekStart = now.subtract(const Duration(days: 7));
-      
+
       final orders = [
         Order(
           id: 'o1',
@@ -173,7 +173,7 @@ void main() {
 
     test('TC-MER-HIS-FILTER-005: Combined status and time range filtering', () {
       final todayStart = DateTime(now.year, now.month, now.day);
-      
+
       final orders = [
         Order(
           id: 'o1',
@@ -208,7 +208,7 @@ void main() {
       ];
 
       final filtered = orders
-          .where((o) => 
+          .where((o) =>
             o.status == OrderStatus.delivered &&
             o.createdAt.isAfter(todayStart))
           .toList();

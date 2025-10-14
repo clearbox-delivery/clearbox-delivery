@@ -385,6 +385,6 @@
 
 ---
 
-**版本**：Phase 3.6 History/Account 骨架完成  
+**版本**：Phase 3.6 History/Account 骨架完成
 **更新日期**：2025-01-15
 

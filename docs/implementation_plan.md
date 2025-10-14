@@ -161,6 +161,8 @@ Status: APPROVED (policies aligned; no login-time device blocking, emulator-only
 
 ## Phase 4 – Courier App
 
+**Note**: See `docs/PHASE4_NOTES.md` for temporary data sources (distance/ETA placeholders, simplified R/T sorting, heat map placeholder, photo capture placeholders, missing backend RPC integration).
+
 4.1 Login animation and first-login KYC flow
 - Files: `apps/courier_app/lib/features/auth/...` (login motion); `apps/courier_app/lib/features/kyc/` (new stepper screens); storage upload client.
 - AC: Sequential capture steps with dev bypass option.
