@@ -50,7 +50,7 @@ class CBButton extends StatelessWidget {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(DesignTokens.textOnInverse),
                   ),
                 )
               : Row(

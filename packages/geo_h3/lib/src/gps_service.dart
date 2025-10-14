@@ -2,7 +2,7 @@ import 'package:latlong2/latlong.dart';
 
 /// GPS Service
 /// Provides current device position with web/dev fallback
-/// 
+///
 /// Web/Dev mode: returns mock location (Taipei 101)
 /// IO/Prod mode: TODO integrate geolocator package in Phase 1+
 class GPSService {

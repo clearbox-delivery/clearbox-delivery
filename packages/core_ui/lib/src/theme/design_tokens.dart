@@ -24,6 +24,9 @@ class DesignTokens {
   static const Color danger = Color(0xFFEF4444);
   static const Color focusRing = Color(0xFF93C5FD);
 
+  // Text on colored backgrounds (inverse)
+  static const Color textOnInverse = Color(0xFFFFFFFF);
+
   // ============ Typography ============
 
   static const double fs2xl = 24.0;  // 1.5rem

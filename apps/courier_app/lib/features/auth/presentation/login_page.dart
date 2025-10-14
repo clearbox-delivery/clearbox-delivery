@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_client/supabase_client.dart';
+import 'package:courier_app/features/auth/presentation/register_flow/register_coordinator_page.dart';
 
 /// Login page for courier
 class LoginPage extends ConsumerStatefulWidget {
@@ -94,6 +95,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         )
                       : const Text('登入'),
                 ),
+              ),
+              const SizedBox(height: 16),
+              
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const RegisterCoordinatorPage(),
+                    ),
+                  );
+                },
+                child: const Text('註冊'),
               ),
             ],
           ),

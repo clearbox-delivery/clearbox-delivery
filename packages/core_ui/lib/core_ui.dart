@@ -12,6 +12,7 @@ export 'src/widgets/cb_card.dart';
 export 'src/widgets/cb_modal.dart';
 export 'src/widgets/cb_tabs.dart';
 export 'src/widgets/cb_toast.dart';
+export 'src/widgets/dev_mode_banner.dart';
 export 'src/widgets/loading_indicator.dart';
 export 'src/widgets/empty_state.dart';
 

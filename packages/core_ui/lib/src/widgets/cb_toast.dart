@@ -141,7 +141,7 @@ class _CBToastWidgetState extends State<_CBToastWidget>
                 children: [
                   Icon(
                     _getIcon(),
-                    color: Colors.white,
+                    color: DesignTokens.textOnInverse,
                     size: 20,
                   ),
                   const SizedBox(width: DesignTokens.sp3),
@@ -150,14 +150,14 @@ class _CBToastWidgetState extends State<_CBToastWidget>
                       widget.message,
                       style: const TextStyle(
                         fontSize: DesignTokens.fsSm,
-                        color: Colors.white,
+                        color: DesignTokens.textOnInverse,
                       ),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 18),
                     onPressed: widget.onDismiss,
-                    color: Colors.white,
+                    color: DesignTokens.textOnInverse,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
