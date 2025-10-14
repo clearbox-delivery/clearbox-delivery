@@ -21,24 +21,61 @@
 #### Stage 1：可接單列表（結算與找尋訂單）
 
 ##### 功能實作
-- **Realtime 串流**：使用 `RealtimeService.watchAvailableOrders()`
+- **Realtime 串流**：使用 `RealtimeService.watchAvailableOrders(h3Cell?)`
 - **客端過濾**：僅顯示 `OrderStatus.waitingCourier`
-- **排序**：暫行以 `deliveryPriceUserSet` 降序（簡化版 R/T）
-  - TODO: 完整 R/T 需整合 OSRM 距離資料與備餐時間
+- **R/T 排序**：使用 `RTCalculator.sortByRT()`
+  - R = `order.deliveryPriceUserSet`
+  - T = `max(courierToMerchantEta, prepTimeMinutes)` + `merchantToCustomerEta`
+  - 最小 T = 5 分鐘（避免除法噪音）
+  - 排序：R/T 降序 → deliveryPrice 降序 → createdAt 升序（tie-breaker）
 - **列表穩定**：卡片使用 `Key('courier-available-${order.id}')`
 - **卡片欄位**：訂單編號、外送費（醒目標示）、距離/ETA 占位、餐點摘要
 - **動作**：「接受訂單」按鈕 → 呼叫 `acceptOrder()` → 導覽至 Stage2
 
-##### 暫行方案
-- **距離/ETA**：固定顯示「距離 1.5km」、「預估 15 分」
-- **R/T 排序**：僅以外送費降序（未整合 OSRM 時間資料與備餐時間計算）
-- **H3 過濾**：未實作 k=40 範圍過濾（目前顯示所有 WAITING_COURIER）
+##### 暫行方案（距離資料）
+- **DistanceService**：
+  - 位置：`packages/supabase_client/lib/src/distance_service.dart`
+  - 方法：`getCourierToMerchantEta()`, `getMerchantToCustomerEta()`
+  - 當前狀態：回傳 `null`（後端 `h3_distance_matrix` 表不存在）
+- **Fallback 策略**：
+  - `courierToMerchantEta` 缺失 → 預設 5 分鐘
+  - `merchantToCustomerEta` 缺失 → 預設 5 分鐘
+  - `prepTimeMinutes` 缺失 → 預設 15 分鐘
+- **實際效果**：
+  - 因距離資料全為 fallback，排序主要依 `deliveryPrice`（R 差異）與 `prepTime`（T 差異）
+  - 公式架構已完整，待 OSRM 表就緒即可自動啟用真實距離
 
-##### 未來改進
-- 整合 OSRM 預計算距離資料（`h3_distance_matrix` 表）
-- 計算 R/T：`R = deliveryPrice`, `T = max(courierToMerchant, prepTime) + merchantToCustomer`, `R/T` 降序
-- H3 k=40 範圍過濾（客端或後端 RPC）
-- 即時更新動畫（插入/移除訂單的平滑過渡）
+##### H3 範圍過濾
+- **當前狀態**：
+  - `watchAvailableOrders(h3Cell: null)` → 不過濾（顯示所有 WAITING_COURIER）
+  - 外送員 H3 cell 取得：未實作（GPS service 待整合）
+- **未來改進**：
+  - 整合 GPS service 取得當前位置 → H3 cell (res=10)
+  - 傳入 `watchAvailableOrders(h3Cell: courierH3)`
+  - 後端或客端 k=40 範圍過濾
+
+##### OSRM 距離資料整合
+- **期望表結構**：`h3_distance_matrix`
+  - 欄位：`from_h3` (text), `to_h3` (text), `distance_km` (real), `time_minutes` (int)
+  - 索引：`(from_h3, to_h3)` unique
+  - 資料範圍：全台灣所有 H3 res=10 對 k=40 範圍內的格子
+- **預計算策略**：
+  - 使用自架 OSRM 伺服器批次計算所有格子對
+  - 定期更新（路況變化）
+- **前端查詢**：
+  - `DistanceService` 查詢 `from_h3 = courierH3 AND to_h3 = merchantH3`
+  - 快取策略（可選）：本地存 k=40 範圍資料
+
+##### 測試
+- **單元測試**（7 測試，全通過）：
+  - `packages/core_data/test/rt_calculator_test.dart`
+  - TC-COU-RT-001: 基本 R/T 計算
+  - TC-COU-RT-002: 使用較大的 prepTime
+  - TC-COU-RT-003: ETA 缺失時 fallback
+  - TC-COU-RT-004: prepTime 缺失時 fallback (15分)
+  - TC-COU-RT-005: 最小 T = 5 分鐘
+  - TC-COU-RT-006: R/T 降序排序
+  - TC-COU-RT-007: Tie-breaker（deliveryPrice → createdAt）
 
 #### Stage 2：前往店家（Go to Merchant）
 
@@ -203,6 +240,6 @@
 
 ---
 
-**版本**：Phase 4 Courier App 骨架完成  
+**版本**：Phase 4 Courier App 骨架完成
 **更新日期**：2025-01-15
 

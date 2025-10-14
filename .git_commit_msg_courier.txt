@@ -1,0 +1,89 @@
+feat(phase4): courier app flow skeleton [REQ-COU-FLOW-001/TC-COU-*]
+
+- Login page animation complete:
+  - Logo slide-up animation (SlideTransition, Offset(0, -0.3))
+  - Form fade-in animation (FadeTransition, Interval(0.3, 1.0))
+  - Uses DesignTokens.durationLong and curveSmooth
+  - CBInput/CBButton unified components
+
+- Current Orders page hub:
+  - Heat map placeholder (gray container + icon + "H3 熱圖開發中")
+  - "我要接單" button navigates to Stage1
+
+- 4-stage order flow skeleton complete:
+  - Stage1: Available orders list (Realtime stream, WAITING_COURIER filter, delivery price sorting)
+  - Stage2: Go to merchant (distance/ETA placeholders, Maps navigation placeholder, arrival photo placeholder)
+  - Stage3: Wait for merchant (prep time countdown placeholder, pickup code placeholder, contact merchant placeholder)
+  - Stage4: Go to customer (distance/ETA placeholders, Maps navigation placeholder, delivery completion)
+
+- OrderService extended:
+  - acceptOrder(orderId): REST UPDATE with optimistic lock (eq status WAITING_COURIER)
+    - TODO: Migrate to RPC for atomic conflict handling
+  - markDelivered(orderId): REST UPDATE to DELIVERED
+    - TODO: Migrate to RPC with photo/signature verification
+
+- Design Tokens compliance: All UI uses DesignTokens, CBButton/CBInput/CBCard/CBToast/CBLoadingIndicator/CBEmptyState/CBErrorState
+
+- List stability: Cards use Key('courier-available-${order.id}')
+
+- User feedback: Loading states, Toast messages (success/error/info), Error handling
+
+- Available orders filtering unit tests (4 tests, all pass):
+  - packages/core_data/test/courier_available_orders_filter_test.dart
+  - TC-COU-FILTER-001: Filters only WAITING_COURIER
+  - TC-COU-FILTER-002: fromString parses correctly
+  - TC-COU-FILTER-003: Empty list handling
+  - TC-COU-FILTER-004: Simple delivery price sorting (descending)
+
+- Created docs/PHASE4_NOTES.md: Comprehensive documentation of:
+  - Login animation implementation
+  - Stage 1-4 flow placeholders (distance/ETA, navigation, photo capture, pickup code)
+  - Service layer REST usage (TODO: RPC migration)
+  - Heat map placeholder status
+  - KYC flow pending
+  - Testing status and gaps
+  - Known gaps: OSRM data, R/T sorting, H3 filtering, heat map calculation, GPS, photo verification, Maps integration, masked communication, KYC, RPC migration, integration tests
+
+- Updated docs/implementation_plan.md: Phase 4 note references PHASE4_NOTES
+
+Placeholders documented:
+- Distance/ETA: Fixed values (1.5km/5min merchant, 2.3km/8min customer)
+- R/T sorting: Simplified to delivery price descending (full formula pending)
+- Heat map: Gray placeholder container
+- Google Maps navigation: Toast placeholder
+- Photo capture: Toast placeholders (arrival, delivery)
+- Pickup code verification: Toast placeholder
+- Contact merchant/customer: Toast placeholders (masked comm)
+- Countdown timer: Text placeholder
+
+Acceptance:
+- [x] Available orders list renders (WAITING_COURIER only, client-side filter)
+- [x] Stage1->Stage2->Stage3->Stage4 navigation operational
+- [x] Accept order button calls acceptOrder() with error handling
+- [x] Complete delivery button calls markDelivered() with loading state
+- [x] All UI uses Design Tokens (no hardcoded colors/spacing)
+- [x] Unit tests pass (4/4)
+- [x] docs/PHASE4_NOTES.md created with placeholders and gaps
+- [x] docs/implementation_plan.md references PHASE4_NOTES
+- [x] No docs/archive/ modifications
+
+Known gaps (documented in PHASE4_NOTES.md):
+- OSRM distance matrix integration
+- R/T sorting formula with prep time and distances
+- H3 k=40 range filtering
+- Heat map calculation and rendering
+- GPS location tracking and H3 cell calculation
+- Photo capture and Storage upload
+- Pickup code/signature verification
+- Google Maps deep linking
+- Masked communication (phone/message)
+- KYC flow (document capture)
+- RPC migration for accept/deliver
+- Integration tests (Supabase Local)
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Tests:
+cd packages/core_data && dart test test/courier_available_orders_filter_test.dart
+

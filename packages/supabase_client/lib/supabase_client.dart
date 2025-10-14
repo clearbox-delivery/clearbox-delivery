@@ -9,5 +9,6 @@ export 'src/notifications_service.dart';
 export 'src/otp_service.dart';
 export 'src/device_service.dart';
 export 'src/address_service.dart';
+export 'src/distance_service.dart';
 
 

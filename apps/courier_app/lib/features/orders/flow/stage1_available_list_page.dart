@@ -8,11 +8,18 @@ import 'package:courier_app/features/orders/flow/stage2_go_merchant_page.dart';
 /// Stage 1: Available Orders List with R/T sorting
 /// [courier_app_whitepaper.md Section 4.2 進度1]
 /// [REQ-COU-FLOW-001] Show WAITING_COURIER orders, sorted by R/T
-class Stage1AvailableListPage extends ConsumerWidget {
+class Stage1AvailableListPage extends ConsumerStatefulWidget {
   const Stage1AvailableListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<Stage1AvailableListPage> createState() => _Stage1AvailableListPageState();
+}
+
+class _Stage1AvailableListPageState extends ConsumerState<Stage1AvailableListPage> {
+  String? _courierH3; // TODO: Get from GPS service
+
+  @override
+  Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
     final courierId = authService.currentUserId;
 
@@ -21,7 +28,10 @@ class Stage1AvailableListPage extends ConsumerWidget {
     }
 
     // Use Realtime stream for available orders
-    final ordersStream = ref.watch(realtimeServiceProvider).watchAvailableOrders();
+    // H3 filtering: pass null for now (show all), will filter client-side if needed
+    final ordersStream = ref.watch(realtimeServiceProvider).watchAvailableOrders(
+      h3Cell: _courierH3,
+    );
 
     return Scaffold(
       backgroundColor: DesignTokens.bg,
@@ -56,11 +66,6 @@ class Stage1AvailableListPage extends ConsumerWidget {
               .where((o) => o.status == OrderStatus.waitingCourier)
               .toList();
 
-          // TODO: Sort by R/T (requires OSRM distance data and prep time)
-          // For now, keep simple order by delivery price (descending)
-          availableOrders.sort((a, b) =>
-              b.deliveryPriceUserSet.compareTo(a.deliveryPriceUserSet));
-
           if (availableOrders.isEmpty) {
             return const CBEmptyState(
               icon: Icons.delivery_dining_outlined,
@@ -69,12 +74,15 @@ class Stage1AvailableListPage extends ConsumerWidget {
             );
           }
 
+          // Sort by R/T
+          final sortedOrders = _sortByRT(availableOrders);
+
           return ListView.separated(
             padding: const EdgeInsets.all(DesignTokens.sp4),
-            itemCount: availableOrders.length,
+            itemCount: sortedOrders.length,
             separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.sp3),
             itemBuilder: (context, index) {
-              final order = availableOrders[index];
+              final order = sortedOrders[index];
               return _AvailableOrderCard(
                 key: Key('courier-available-${order.id}'),
                 order: order,
@@ -87,9 +95,33 @@ class Stage1AvailableListPage extends ConsumerWidget {
     );
   }
 
+  List<Order> _sortByRT(List<Order> orders) {
+    // TODO: Fetch actual distance data from DistanceService
+    // For now, use empty maps (will trigger fallbacks in RTCalculator)
+    final courierToMerchantEtas = <String, int?>{};
+    final merchantToCustomerEtas = <String, int?>{};
+
+    return RTCalculator.sortByRT(
+      orders: orders,
+      courierToMerchantEtas: courierToMerchantEtas,
+      merchantToCustomerEtas: merchantToCustomerEtas,
+    );
+  }
+
   Future<void> _handleAcceptOrder(BuildContext context, WidgetRef ref, Order order) async {
     try {
-      await ref.read(orderServiceProvider).acceptOrder(order.id);
+      final result = await ref.read(orderServiceProvider).acceptOrder(order.id);
+
+      if (!result.success) {
+        if (context.mounted) {
+          CBToast.show(
+            context: context,
+            message: result.message ?? '接單失敗',
+            type: CBToastType.error,
+          );
+        }
+        return;
+      }
 
       if (context.mounted) {
         Navigator.pushReplacement(
@@ -216,4 +248,3 @@ class _AvailableOrderCard extends StatelessWidget {
     );
   }
 }
-

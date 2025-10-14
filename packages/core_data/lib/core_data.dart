@@ -12,5 +12,6 @@ export 'src/enums/order_status.dart';
 export 'src/enums/actor_type.dart';
 export 'src/enums/event_type.dart';
 export 'src/enums/cancel_reason.dart';
+export 'src/utils/rt_calculator.dart';
 
 
