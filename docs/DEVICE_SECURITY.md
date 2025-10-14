@@ -118,15 +118,14 @@ FUNCTION bind_device_to_user(
 - Checks if device already registered → reject
 - Binds device, marks `is_registered=true`
 
-### RPC: `check_device_binding`
+### RPC: `mark_device_ineligible_if_login_on_existing_account`
 ```sql
-FUNCTION check_device_binding(
+FUNCTION mark_device_ineligible_if_login_on_existing_account(
   p_device_id TEXT,
   p_user_id UUID
-) RETURNS BOOLEAN
+) RETURNS VOID
 ```
-- Returns true if device bound to this user or no binding exists
-- Returns false if device bound to different user
+- If the device has no prior registration binding and the user account already exists, mark this device as ineligible for future registration.
 
 ## Frontend Integration Points
 
@@ -137,9 +136,8 @@ FUNCTION check_device_binding(
 4. If failed, show error screen and exit
 
 ### On Login
-1. Check device binding via `check_device_binding(deviceId, userId)`
-2. If bound to different user (and !DEV_MODE), block with message
-3. If unbound or same user, proceed
+1. Emulator detection: In production, block login on emulators/simulators if integrity/attest fails. In dev, bypass via env flag.
+2. Device eligibility tracking: If this device has never registered and the user logs in to an existing account, mark this device as ineligible for future registration (per whitepaper 1.2). Do not block login due to binding.
 
 ### On Registration Complete
 1. Call `bind_device_to_user(deviceId, newUserId)`

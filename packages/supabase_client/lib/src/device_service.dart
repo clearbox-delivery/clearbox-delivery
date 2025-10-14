@@ -7,7 +7,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Device Service
 /// [docs/DEVICE_SECURITY.md] Device binding and simulator detection
-/// [REQ-AUTH-OTP-001/002] Device-based rate limiting
+/// Clarification: Do NOT block login based on binding. Follow policy:
+/// - One device/email/phone may register only once.
+/// - If an unregistered device logs in to an existing account, mark the device as ineligible for future registration.
+/// Emulator login/registration is blocked in production via integrity/attest.
 class DeviceService {
   final SupabaseClient _client;
   static const String _deviceIdKey = 'clearbox_device_id';

@@ -78,12 +78,16 @@ Legend
 - Files:
   - Docs: `docs/DEVICE_SECURITY.md` (new)
   - Client: `packages/supabase_client/lib/src/device_service.dart` (new)
-  - Apps: integrate on first successful verify → bind device; check on login.
+  - Apps: integrate on first successful register → bind device.
 - Actions:
-  - Bind deviceId at first login; block mismatched devices (prod flag only).
+  - Bind deviceId immediately after first successful registration (not at login).
+  - Do NOT block login based on device binding. Follow whitepaper rules:
+    - One device/email/phone may register only once.
+    - If an unregistered device logs in to an existing account, that device loses future registration eligibility.
+  - Emulator policy: block registration and login on emulators in production only.
   - Document Play Integrity/App Attest and CAPTCHA; implement dev-mode toggle.
 - AC:
-  - Env flag controls enforcement; local web runs bypass with banner warning.
+  - Env flag controls emulator enforcement; local web runs bypass with banner warning.
 
 ---
 
