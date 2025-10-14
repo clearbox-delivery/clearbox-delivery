@@ -1,0 +1,75 @@
+feat(phase4): courier history/account skeleton [REQ-COU-HIS-001/REQ-COU-ACC-001/TC-COU-*]
+
+- History page complete:
+  - apps/courier_app/lib/features/history/presentation/history_page.dart
+  - Filters: Time range (today/week/month/custom), status (DELIVERED/cancelled), keyword search
+  - List cards: Order ID, completion time, status badge, meal price, delivery fee
+  - Tap card opens order details BottomSheet
+  - UI uses Design Tokens, status badges color-coded (green/red)
+  - EmptyState when no orders
+
+- OrderDetailsSheet:
+  - apps/courier_app/lib/features/history/presentation/order_details_sheet.dart
+  - DraggableScrollableSheet (0.5 - 0.95 height)
+  - Shows: Order ID, status, created/completed time, item details, price breakdown
+  - UI uses Design Tokens, consistent status rendering
+
+- Account page complete:
+  - apps/courier_app/lib/features/account/presentation/account_page.dart
+  - Sections:
+    1. Profile: Name, email, vehicle info (Toast placeholder)
+    2. Work status: Accept orders switch (Toast feedback, not synced to backend yet)
+    3. Notifications & Settings: Push switch (Toast), KYC status (placeholder), device security (placeholder)
+    4. Financial: Bank account (masked), contracts (placeholder)
+    5. Help: Help center, feedback, about (v1.0.0)
+    6. Logout: Confirmation dialog → authService.signOut()
+  - UI uses Design Tokens, CBCard sections, ListTile + Switch
+  - Logout button in danger color
+
+- OrderService getCourierHistory:
+  - packages/supabase_client/lib/src/order_service.dart
+  - Query orders by courier_id and status in (DELIVERED, CANCELLED_*)
+  - Time range filters: from/to on updated_at
+  - Other filters (status, keyword): Client-side
+  - Ordered by updated_at desc
+
+- History filter unit tests (5 tests, all pass):
+  - packages/core_data/test/courier_history_filter_test.dart
+  - TC-COU-HIS-001: Filter DELIVERED status
+  - TC-COU-HIS-002: Filter cancelled status
+  - TC-COU-HIS-003: Time range filter (today)
+  - TC-COU-HIS-004: Keyword search
+  - TC-COU-HIS-005: Combined filters (status + time)
+
+- Account controls unit tests (3 tests, all pass):
+  - packages/core_data/test/courier_account_test.dart
+  - TC-COU-ACC-001: Accept orders toggle
+  - TC-COU-ACC-002: Push notifications toggle
+  - TC-COU-ACC-003: Multiple toggles independent
+
+- Updated docs/PHASE4_NOTES.md: Section 4.6 History/Account
+  - History implementation (filters, data source, UI)
+  - Account implementation (sections, switches, logout)
+  - Placeholders documented (profile data, backend sync, CSV export, KYC status)
+  - Future improvements (RPC for status sync, real profile query, CSV export, KYC integration)
+
+Acceptance:
+- [x] History: List renders, basic filters work, details sheet opens, UI uses Design Tokens
+- [x] Account: Main sections exist and operable (no-op + Toast acceptable), UI uses Design Tokens
+- [x] OrderService: Has getCourierHistory method, client-side filters acceptable
+- [x] Tests pass (8 total: 5 history + 3 account)
+- [x] docs/PHASE4_NOTES.md updated with minimal differences
+- [x] No docs/archive/ modifications
+
+Known gaps (documented):
+- Accept orders/push switches not synced to backend
+- Profile data static placeholders (not querying couriers table)
+- CSV export not implemented
+- KYC status display placeholder
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Tests:
+cd packages/core_data && dart test test/courier_history_filter_test.dart test/courier_account_test.dart
+

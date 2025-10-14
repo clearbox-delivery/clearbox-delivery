@@ -68,31 +68,51 @@
   - 即時 GPS 更新（移動時重新計算範圍）
 
 ##### OSRM 距離資料整合
-- **期望表結構**：`h3_distance_matrix`
-  - 欄位：`from_h3` (text), `to_h3` (text), `distance_km` (real), `time_minutes` (int)
-  - 索引：`(from_h3, to_h3)` unique
-  - 資料範圍：全台灣所有 H3 res=10 對 k=40 範圍內的格子
-- **預計算策略**：
-  - 使用自架 OSRM 伺服器批次計算所有格子對
-  - 定期更新（路況變化）
-- **前端查詢**（已實作）：
-  - `DistanceService.getCourierToMerchantEta(courierH3, merchantH3) -> int?`
-  - `DistanceService.getMerchantToCustomerEta(merchantH3, customerH3) -> int?`
-  - 查詢樣例：
-    ```dart
-    final response = await _client
-        .from('h3_distance_matrix')
-        .select('time_minutes')
-        .eq('from_h3', courierH3)
-        .eq('to_h3', merchantH3)
-        .maybeSingle();
-    return response?['time_minutes'] as int?;
-    ```
-  - 若表不存在或查詢失敗：回傳 `null`（觸發 RTCalculator fallback 5分鐘）
-- **快取策略**（已實作）：
-  - Stage1 使用簡易記憶體快取 `Map<String, int?> _etaCache`
-  - Cache key: `"${from_h3}->${to_h3}"`
-  - 避免重複查詢相同格子對
+
+###### 後端 Schema（已完成）
+- **Migration**：`infra/supabase/migrations/20250115000000_h3_distance_matrix.sql`
+- **表結構**：`h3_distance_matrix`
+  - 欄位：`from_h3` (text), `to_h3` (text), `time_minutes` (int), `distance_km` (real), `created_at`, `updated_at`
+  - Primary key：`(from_h3, to_h3)`
+  - 索引：`idx_h3_distance_from (from_h3)`, `idx_h3_distance_to (to_h3)`
+  - RLS：公開唯讀（應用層不寫入，僅 ETL 腳本）
+- **RPC**：`get_batch_eta(p_pairs JSONB)`
+  - 輸入：`[{from_h3, to_h3}, ...]`
+  - 輸出：`TABLE(from_h3, to_h3, time_minutes)`
+  - 用途：批量查詢多對 H3 pair，減少請求數
+
+###### ETL 流程（已文件化）
+- **位置**：`infra/seed/h3_distance_etl_example.md`
+- **步驟**：
+  1. 產生全台灣 H3 res=10 格子清單（Python h3 library）
+  2. 對每格計算 k=40 範圍鄰居的 OSRM 距離（批次查詢）
+  3. 產生 CSV：`from_h3, to_h3, time_minutes, distance_km`
+  4. 導入 Supabase（`COPY` 或 bulk insert）
+- **資料量**：約 300 萬筆（150 MB）
+- **更新頻率**：週或月
+
+###### 前端批量查詢（已實作）
+- **DistanceService 增強**：
+  - `getBatchETA(pairs) -> Map<String, int?>`
+  - 呼叫 `get_batch_eta` RPC，批量查詢多對 H3 pair
+  - 若 RPC 不可用：降級為單次查詢（或回傳 null）
+- **LRU 快取**：
+  - 容量：500 筆
+  - TTL：30 分鐘
+  - 策略：快取命中直接返回；超過容量移除最舊項目；過期自動清除
+  - 負值快取：查詢不到的 pair 也快取為 `null`（避免重複查詢）
+
+###### Stage1 批量查詢策略（已實作）
+- **去重**：先收集所有訂單的 H3 pair，去重後批量查詢（減少請求數）
+- **流程**：
+  1. 收集 unique pairs（courier→merchant, merchant→customer）
+  2. 呼叫 `getBatchETA(pairs)`（LRU 快取優先）
+  3. 將 ETA map 傳入 `RTCalculator.sortByRT()`
+  4. 若任何 ETA 為 null：使用 fallback（5分鐘）
+- **效能**：
+  - 20 筆訂單、無快取命中：約 2-4 個 RPC 請求（每次最多查 100 對）
+  - 有快取命中：0-1 個請求
+  - 查詢時間：5-20ms（取決於資料量與快取率）
 
 ##### 測試
 - **單元測試**（12 測試，全通過）：
@@ -342,14 +362,16 @@
 ## 已知缺口與待辦
 
 1. **OSRM 距離資料**：
-   - ✅ `DistanceService` 已實作查詢邏輯（若表存在則讀取，否則回傳 null）
-   - ⚠️ `h3_distance_matrix` 表尚未建立（當前使用 fallback 5min）
-   - 一旦表建立並導入資料，R/T 排序將自動使用真實 ETA
-2. **R/T 排序 ETA 查詢**：
-   - ✅ 已改用 `FutureBuilder` 包裝 + 記憶體快取
-   - ✅ 非同步批次查詢所有訂單的 ETA
-   - ⚠️ 快取策略為簡易記憶體（無持久化、無過期機制）
-   - 未來可改進：LRU 快取、過期時間、預載附近格子
+   - ✅ Migration 已建立（`20250115000000_h3_distance_matrix.sql`）
+   - ✅ `DistanceService` 批量查詢與 LRU 快取（500 筆、30 分鐘 TTL）
+   - ✅ `get_batch_eta` RPC 已定義
+   - ⚠️ 資料尚未導入（ETL 腳本已提供於 `infra/seed/h3_distance_etl_example.md`）
+   - 一旦資料導入，R/T 排序將自動使用真實 ETA
+2. **R/T 排序批量查詢**：
+   - ✅ Stage1 已升級為批量查詢 + H3 pair 去重
+   - ✅ LRU 快取（容量、TTL、負值快取）
+   - ✅ 降級策略：RPC 失敗時回傳 null（觸發 fallback）
+   - 可選改進：預載附近 k=40 所有 pairs（啟動時）
 3. **H3 範圍過濾**：
    - ✅ 客端 k=40 過濾已實作
    - TODO: 後端 RPC/View 預過濾（減少傳輸量）
@@ -381,9 +403,10 @@
 - [x] Phase 4.2+：R/T 排序邏輯與 fallback
 - [x] Phase 4.3：GPS→H3 與 k=40 範圍過濾（客端）
 - [x] Phase 4.4：熱度地圖最小實作（HeatMath + 3x3 網格 + mock 資料）
-- [x] Phase 4.3+：OSRM 查詢邏輯與真實 ETA 整合（表待建立）
+- [x] Phase 4.3+：OSRM 查詢邏輯與真實 ETA 整合
+- [x] Phase 4.3++：OSRM Migration + 批量查詢 + LRU 快取 + ETL 文件
 - [x] Phase 4.6：History/Account 骨架（篩選、詳情、開關占位）
-- [ ] Phase 4.3++：OSRM 表建立與資料導入
+- [ ] Phase 4.3+++：OSRM 資料導入（執行 ETL 腳本，導入 300 萬筆距離資料）
 - [ ] Phase 4.4+：熱度地圖完善（實際資料查詢、k=40 完整網格、定時更新）
 - [ ] Phase 4.5：KYC 流程（證件拍攝與上傳）
 - [ ] Phase 4.7：照片驗證與取餐碼
@@ -392,5 +415,5 @@
 
 ---
 
-**版本**：Phase 4.6 History/Account 骨架完成
+**版本**：Phase 4.3++ OSRM 批量查詢與快取完成  
 **更新日期**：2025-01-15

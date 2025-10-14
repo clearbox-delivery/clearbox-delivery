@@ -135,45 +135,53 @@ class _Stage1AvailableListPageState extends ConsumerState<Stage1AvailableListPag
 
   /// Fetch real ETA data and sort by R/T
   /// [REQ-COU-FLOW-004] Enable real OSRM distance data
-  /// Strategy: Fetch ETAs for all orders, use cache, graceful fallback
+  /// [REQ-COU-FLOW-005] Batch queries with de-duplication
+  /// Strategy: Batch query all unique H3 pairs, cache results, graceful fallback
   Future<List<Order>> _sortByRTWithRealETA(List<Order> orders) async {
     if (orders.isEmpty) return orders;
-
+    
     final distanceService = ref.read(distanceServiceProvider);
     final courierToMerchantEtas = <String, int?>{};
     final merchantToCustomerEtas = <String, int?>{};
 
-    // Fetch ETAs for each order (with cache)
+    // Collect all unique H3 pairs (de-duplication)
+    final pairs = <({String from, String to})>[];
+    final seenPairs = <String>{};
+
     for (final order in orders) {
       if (order.h3Merchant == null || order.h3Customer == null) continue;
 
       // Courier → Merchant
       if (_courierH3 != null) {
-        final cacheKey = '${_courierH3!}->${order.h3Merchant!}';
-        if (_etaCache.containsKey(cacheKey)) {
-          courierToMerchantEtas[order.merchantId] = _etaCache[cacheKey];
-        } else {
-          final eta = await distanceService.getCourierToMerchantEta(
-            courierH3: _courierH3!,
-            merchantH3: order.h3Merchant!,
-          );
-          _etaCache[cacheKey] = eta;
-          courierToMerchantEtas[order.merchantId] = eta;
+        final key = '${_courierH3!}->${order.h3Merchant!}';
+        if (!seenPairs.contains(key)) {
+          pairs.add((from: _courierH3!, to: order.h3Merchant!));
+          seenPairs.add(key);
         }
       }
 
       // Merchant → Customer
-      final cacheKey2 = '${order.h3Merchant!}->${order.h3Customer!}';
-      if (_etaCache.containsKey(cacheKey2)) {
-        merchantToCustomerEtas[order.id] = _etaCache[cacheKey2];
-      } else {
-        final eta = await distanceService.getMerchantToCustomerEta(
-          merchantH3: order.h3Merchant!,
-          customerH3: order.h3Customer!,
-        );
-        _etaCache[cacheKey2] = eta;
-        merchantToCustomerEtas[order.id] = eta;
+      final key2 = '${order.h3Merchant!}->${order.h3Customer!}';
+      if (!seenPairs.contains(key2)) {
+        pairs.add((from: order.h3Merchant!, to: order.h3Customer!));
+        seenPairs.add(key2);
       }
+    }
+
+    // Batch query all pairs
+    final etaMap = await distanceService.getBatchETA(pairs: pairs);
+
+    // Map ETAs to orders
+    for (final order in orders) {
+      if (order.h3Merchant == null || order.h3Customer == null) continue;
+
+      if (_courierH3 != null) {
+        final key = '${_courierH3!}->${order.h3Merchant!}';
+        courierToMerchantEtas[order.merchantId] = etaMap[key];
+      }
+
+      final key2 = '${order.h3Merchant!}->${order.h3Customer!}';
+      merchantToCustomerEtas[order.id] = etaMap[key2];
     }
 
     // Sort with real ETAs (will use fallback if null)
