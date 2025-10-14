@@ -94,7 +94,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/new-order',
-        builder: (context, state) => const NewOrderPage(),
+        builder: (context, state) => NewOrderPage(extra: state.extra as Map<String, dynamic>?),
       ),
       GoRoute(
         path: '/history',

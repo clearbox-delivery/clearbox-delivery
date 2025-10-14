@@ -5,6 +5,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:core_data/core_data.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:customer_app/features/address/presentation/address_edit_dialog.dart';
+import 'package:customer_app/providers/selected_address_provider.dart';
 
 /// Address Selection Gate
 /// [customer_app_whitepaper.md Section 2]
@@ -50,8 +51,12 @@ class _SelectAddressGateState extends ConsumerState<SelectAddressGate> {
   }
 
   void _selectAddress(UserAddress address) {
-    // TODO: Store selected address in state management
-    context.go('/new-order');
+    // Store selected address in state management
+    ref.read(selectedAddressProvider.notifier).selectAddress(address);
+    
+    // Navigate to NewOrder with flag to auto-show categories
+    // [customer_app_whitepaper.md Section 4.1] 預設顯示「今天想吃什麼？」
+    context.go('/new-order', extra: {'autoShowCategories': true});
   }
 
   Future<void> _showAddDialog() async {

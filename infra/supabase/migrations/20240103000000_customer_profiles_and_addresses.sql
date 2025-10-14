@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS user_addresses (
   name TEXT NOT NULL,
   address TEXT NOT NULL,
   google_maps_link TEXT DEFAULT '',
+  latitude NUMERIC(10, 8) DEFAULT 25.0330,
+  longitude NUMERIC(11, 8) DEFAULT 121.5654,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT user_addresses_name_check CHECK (char_length(name) > 0),
   CONSTRAINT user_addresses_address_check CHECK (char_length(address) > 0)

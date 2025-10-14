@@ -14,6 +14,8 @@ class UserAddress with _$UserAddress {
     required String address,
     required String googleMapsLink,
     required DateTime createdAt,
+    @Default(25.0330) double latitude, // Taipei 101 default
+    @Default(121.5654) double longitude,
   }) = _UserAddress;
 
   factory UserAddress.fromJson(Map<String, dynamic> json) =>

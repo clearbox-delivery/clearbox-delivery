@@ -13,7 +13,9 @@ import 'package:customer_app/widgets/app_bottom_nav.dart';
 /// [REQ-CUST-ORDER-001] 顾客自订外送费 (30-5000)
 /// [UI_GUIDELINES.md] 使用 Design Tokens
 class NewOrderPage extends ConsumerStatefulWidget {
-  const NewOrderPage({super.key});
+  final Map<String, dynamic>? extra;
+
+  const NewOrderPage({super.key, this.extra});
 
   @override
   ConsumerState<NewOrderPage> createState() => _NewOrderPageState();
@@ -24,6 +26,22 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
   final _notesController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  bool _hasAutoShownCategories = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Auto-show categories overlay if flagged
+    // [customer_app_whitepaper.md Section 4.1] 預設顯示「今天想吃什麼？」
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_hasAutoShownCategories && 
+          widget.extra?['autoShowCategories'] == true) {
+        _hasAutoShownCategories = true;
+        _showCategoriesOverlay();
+      }
+    });
+  }
 
   @override
   void dispose() {
