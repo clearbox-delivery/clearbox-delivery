@@ -2,7 +2,7 @@
 -- [REQ-COU-VERIF-002] Pickup code backend integration
 
 -- Add pickup_code to orders table
-ALTER TABLE orders 
+ALTER TABLE orders
 ADD COLUMN IF NOT EXISTS pickup_code TEXT;
 
 COMMENT ON COLUMN orders.pickup_code IS 'Six-digit pickup code for merchant verification. Generated when order is confirmed by merchant.';
@@ -37,7 +37,7 @@ GRANT EXECUTE ON FUNCTION verify_pickup_code(UUID, TEXT) TO authenticated;
 
 -- TODO: Update merchant_confirm RPC to generate pickup_code
 -- Example logic for pickup code generation:
--- UPDATE orders 
+-- UPDATE orders
 -- SET pickup_code = LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0')
 -- WHERE id = p_order_id AND status = 'CONFIRMED';
 --

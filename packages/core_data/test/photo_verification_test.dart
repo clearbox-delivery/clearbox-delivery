@@ -41,7 +41,7 @@ void main() {
       bool verifyStub(String code) {
         return code.length == 6;
       }
-      
+
       expect(verifyStub('123456'), true);
       expect(verifyStub('12345'), false);
       expect(verifyStub('abc123'), true); // Length check only (stub)
@@ -56,13 +56,13 @@ void main() {
         }
         return rpcResult;
       }
-      
+
       // RPC available and returns true
       expect(verifyWithFallback('123456', rpcAvailable: true, rpcResult: true), true);
-      
+
       // RPC available but returns false (wrong code)
       expect(verifyWithFallback('999999', rpcAvailable: true, rpcResult: false), false);
-      
+
       // RPC unavailable, fallback to length check
       expect(verifyWithFallback('123456', rpcAvailable: false), true);
       expect(verifyWithFallback('12345', rpcAvailable: false), false);

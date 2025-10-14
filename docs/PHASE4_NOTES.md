@@ -652,23 +652,64 @@
 #### 暫行方案與缺口
 - **資料來源**：
   - History：OrderService 查詢，前端篩選（狀態、關鍵字）
-  - Account：個人資料為靜態占位（未查詢 `couriers` 表或 `auth.users`）
-- **狀態同步**：
-  - 接單開關、推播開關：僅前端 state，未同步後端
-  - 建議欄位：`couriers.is_accepting_orders` (bool), `couriers.push_enabled` (bool)
+  - Account：個人資料從 `auth.users` 讀取 email；display_name/vehicle_plate 從 `CourierSettings` 讀取（缺欄位時 fallback）
+- **狀態同步**（已完成 Phase 4.9）：
+  - ✅ 接單開關、推播開關：已與 `CourierService` 接線
+  - ✅ 欄位建議：`couriers.is_accepting_orders`, `couriers.push_enabled`, `display_name`, `vehicle_plate`
+  - ⚠️ 若欄位不存在：服務層返回 false，UI 顯示警告 Toast「更新失敗（欄位可能尚未建立，僅本地更新）」
 - **CSV 匯出**：未實作（可加按鈕 + Toast 占位）
-- **KYC 狀態**：顯示「已完成（開發中）」，未查詢實際狀態
+- **KYC 狀態**：✅ 已實作（AccountPage 顯示 Badge，pending/approved/rejected）
 
 #### 未來改進
-- **後端同步**：
-  - 新增 RPC `update_courier_status(is_accepting_orders, push_enabled)`
-  - 查詢 `couriers` 表取得真實個人資料
 - **CSV 匯出**：
   - 後端產生 CSV（或前端 dart:io）
   - 下載/分享功能
-- **KYC 整合**：
-  - 查詢驗證狀態
-  - 未通過時顯示警告與補件連結
+- **個人資料編輯**：
+  - 完整表單（姓名、電話、車輛詳情）
+  - 照片上傳（頭像、車輛照片）
+
+### 4.9 Account 後端同步（最小差異）
+
+#### 服務層（已完成）
+- **CourierService**（`packages/supabase_client/lib/src/courier_service.dart`）：
+  - `getCourierSettings(courierId) -> CourierSettings`：查詢 `couriers` 表
+  - `updateCourierSettings(courierId, {isAcceptingOrders?, pushEnabled?, displayName?, vehiclePlate?})`：更新設定
+  - Fallback 策略：若欄位不存在，`getCourierSettings` 返回預設值（true/true）；`updateCourierSettings` 返回 false
+- **CourierSettings 模型**（`packages/core_data/lib/src/models/courier_settings.dart`）：
+  - Freezed 模型：`courierId`, `isAcceptingOrders`, `pushEnabled`, `displayName`, `vehiclePlate`, `email`
+  - 預設值：`isAcceptingOrders: true`, `pushEnabled: true`
+
+#### 前端整合（已完成）
+- **AccountPage**（`apps/courier_app/lib/features/account/presentation/account_page.dart`）：
+  - `initState` 呼叫 `CourierService.getCourierSettings()` 載入設定
+  - 「接受新訂單」切換：
+    - 呼叫 `updateCourierSettings(isAcceptingOrders: value)`
+    - 成功：Toast「已開始接單」/「已暫停接單」
+    - 失敗：Toast「更新失敗（欄位可能尚未建立，僅本地更新）」，warning 類型
+  - 「推播通知」切換：
+    - 呼叫 `updateCourierSettings(pushEnabled: value)`
+    - 成功：Toast「已啟用推播通知」/「已關閉推播通知」
+    - 失敗：Toast 警告
+  - 本地狀態：即時更新 `_isAcceptingOrders`/`_isPushEnabled`，避免閃爍
+  - 其他段落：保持不變（KYC Badge、個人資料占位、金融與文件）
+
+#### 測試（已完成）
+- **單元測試**（`packages/core_data/test/courier_settings_test.dart`，4 測試，全通過）：
+  - TC-COU-ACC-004：預設設定（isAcceptingOrders/pushEnabled = true）
+  - TC-COU-ACC-005：自訂設定
+  - TC-COU-ACC-006：Fallback 當欄位缺失（模擬後端缺口）
+  - TC-COU-ACC-007：JSON 序列化往返
+
+#### 已知缺口與待辦
+- **後端欄位**：
+  - 建議在 `couriers` 表加入：`is_accepting_orders` (bool), `push_enabled` (bool), `display_name` (text), `vehicle_plate` (text)
+  - 若未建立：前端服務層自動 fallback，UI 顯示警告 Toast
+- **RPC 可選**：
+  - `update_courier_settings(p_courier_id, p_is_accepting_orders, p_push_enabled, ...)`
+  - 當前：使用 REST UPDATE，已足夠（最小差異）
+- **個人資料編輯**：
+  - 當前：顯示 email（auth.users）、display_name/vehicle_plate（CourierSettings，若缺則顯示占位）
+  - 未來：完整編輯表單（姓名、電話、車輛詳情、頭像上傳）
 
 ---
 
@@ -735,12 +776,13 @@
 - [x] Phase 4.8+：整合測試骨架（Supabase Local 前置條件文件化）
 - [x] Phase 4.7：照片驗證 + 取餐碼（Stage2/4 拍照 + 取餐碼 stub）
 - [x] Phase 4.7+：取餐碼後端整合（orders.pickup_code + RPC + fallback）
+- [x] Phase 4.9：Account 後端同步（CourierService + 接單/推播開關 + fallback）
 - [ ] Phase 4.3+++：OSRM 資料導入（由管理員執行 ETL，導入 300 萬筆）
 - [ ] Phase 4.5+++：KYC 管理員審核（Admin Dashboard + RLS + 推播通知）
 - [ ] Phase 4.7++：取餐碼自動生成（merchant_confirm RPC 整合）
-- [ ] Phase 4.9：History/Account 後端同步（狀態、個人資料、CSV 匯出）
+- [ ] Phase 4.9+：Account 完整編輯（個人資料表單、頭像上傳、CSV 匯出）
 
 ---
 
-**版本**：Phase 4.7+ 取餐碼後端整合完成  
+**版本**：Phase 4.9 Account 後端同步完成  
 **更新日期**：2025-01-15

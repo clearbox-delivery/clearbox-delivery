@@ -21,11 +21,14 @@ class _AccountPageState extends ConsumerState<AccountPage> {
   bool _isPushEnabled = true;
   KycStatus? _kycStatus;
   bool _kycLoading = true;
+  bool _settingsLoading = true;
+  CourierSettings? _courierSettings;
 
   @override
   void initState() {
     super.initState();
     _loadKycStatus();
+    _loadCourierSettings();
   }
 
   Future<void> _loadKycStatus() async {
@@ -42,6 +45,26 @@ class _AccountPageState extends ConsumerState<AccountPage> {
       setState(() {
         _kycStatus = status ?? KycStatus.pending;
         _kycLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadCourierSettings() async {
+    final authService = ref.read(authServiceProvider);
+    final courierId = authService.currentUserId;
+    if (courierId == null) {
+      setState(() => _settingsLoading = false);
+      return;
+    }
+
+    final courierService = ref.read(courierServiceProvider);
+    final settings = await courierService.getCourierSettings(courierId);
+    if (mounted) {
+      setState(() {
+        _courierSettings = settings;
+        _isAcceptingOrders = settings.isAcceptingOrders;
+        _isPushEnabled = settings.pushEnabled;
+        _settingsLoading = false;
       });
     }
   }
@@ -110,13 +133,36 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                   title: '接受新訂單',
                   subtitle: _isAcceptingOrders ? '目前可接單' : '暫停接單',
                   value: _isAcceptingOrders,
-                  onChanged: (value) {
+                  onChanged: (value) async {
                     setState(() => _isAcceptingOrders = value);
-                    CBToast.show(
-                      context: context,
-                      message: value ? '已開始接單' : '已暫停接單',
-                      type: CBToastType.success,
-                    );
+                    
+                    final authService = ref.read(authServiceProvider);
+                    final courierId = authService.currentUserId;
+                    
+                    if (courierId != null) {
+                      final courierService = ref.read(courierServiceProvider);
+                      final success = await courierService.updateCourierSettings(
+                        courierId: courierId,
+                        isAcceptingOrders: value,
+                      );
+                      
+                      if (!success && mounted) {
+                        CBToast.show(
+                          context: context,
+                          message: '更新失敗（欄位可能尚未建立，僅本地更新）',
+                          type: CBToastType.warning,
+                        );
+                        return;
+                      }
+                    }
+                    
+                    if (mounted) {
+                      CBToast.show(
+                        context: context,
+                        message: value ? '已開始接單' : '已暫停接單',
+                        type: CBToastType.success,
+                      );
+                    }
                   },
                 ),
               ],
@@ -134,13 +180,36 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                   title: '推播通知',
                   subtitle: _isPushEnabled ? '已啟用' : '已關閉',
                   value: _isPushEnabled,
-                  onChanged: (value) {
+                  onChanged: (value) async {
                     setState(() => _isPushEnabled = value);
-                    CBToast.show(
-                      context: context,
-                      message: value ? '已啟用推播通知' : '已關閉推播通知',
-                      type: CBToastType.info,
-                    );
+                    
+                    final authService = ref.read(authServiceProvider);
+                    final courierId = authService.currentUserId;
+                    
+                    if (courierId != null) {
+                      final courierService = ref.read(courierServiceProvider);
+                      final success = await courierService.updateCourierSettings(
+                        courierId: courierId,
+                        pushEnabled: value,
+                      );
+                      
+                      if (!success && mounted) {
+                        CBToast.show(
+                          context: context,
+                          message: '更新失敗（欄位可能尚未建立，僅本地更新）',
+                          type: CBToastType.warning,
+                        );
+                        return;
+                      }
+                    }
+                    
+                    if (mounted) {
+                      CBToast.show(
+                        context: context,
+                        message: value ? '已啟用推播通知' : '已關閉推播通知',
+                        type: CBToastType.info,
+                      );
+                    }
                   },
                 ),
                 const Divider(height: 1),
