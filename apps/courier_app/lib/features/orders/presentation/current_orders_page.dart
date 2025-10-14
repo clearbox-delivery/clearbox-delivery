@@ -2,17 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:supabase_client/supabase_client.dart';
+import 'package:geo_h3/geo_h3.dart';
 import 'package:courier_app/widgets/app_bottom_nav.dart';
 import 'package:courier_app/features/orders/flow/stage1_available_list_page.dart';
+import 'package:courier_app/features/heat/presentation/heat_map_widget.dart';
 
 /// Courier Current Orders Page (Main hub)
 /// [courier_app_whitepaper.md Section 4]
 /// [REQ-COU-FLOW-001] Heat map + "我要接單" button + 4-stage flow
-class CurrentOrdersPage extends ConsumerWidget {
+class CurrentOrdersPage extends ConsumerStatefulWidget {
   const CurrentOrdersPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CurrentOrdersPage> createState() => _CurrentOrdersPageState();
+}
+
+class _CurrentOrdersPageState extends ConsumerState<CurrentOrdersPage> {
+  String? _courierH3;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCourierH3();
+  }
+
+  Future<void> _initCourierH3() async {
+    try {
+      final position = await GPSService.getCurrentPosition();
+      final h3 = H3Service.toH3Res10(position);
+      if (mounted) {
+        setState(() => _courierH3 = h3);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _courierH3 = null);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
     final courierId = authService.currentUserId;
 
@@ -27,30 +56,12 @@ class CurrentOrdersPage extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Heat map placeholder
-          Container(
-            height: 200,
-            margin: const EdgeInsets.all(DesignTokens.sp4),
-            decoration: BoxDecoration(
-              color: DesignTokens.bgSubtle,
-              borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
-              border: Border.all(color: DesignTokens.border),
-            ),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.map_outlined, size: 48, color: DesignTokens.textMuted),
-                  SizedBox(height: DesignTokens.sp3),
-                  Text(
-                    '需求熱度地圖（H3 熱圖開發中）',
-                    style: TextStyle(
-                      fontSize: DesignTokens.fsSm,
-                      color: DesignTokens.textMuted,
-                    ),
-                  ),
-                ],
-              ),
+          // Heat map widget
+          Padding(
+            padding: const EdgeInsets.all(DesignTokens.sp4),
+            child: HeatMapWidget(
+              centerH3: _courierH3,
+              heatValues: _getMockHeatData(),
             ),
           ),
 
@@ -87,6 +98,21 @@ class CurrentOrdersPage extends ConsumerWidget {
     );
   }
 
+  Map<String, double> _getMockHeatData() {
+    // TODO: Fetch real heat data from backend
+    // For now, return mock data (center highest, gradually decreasing)
+    if (_courierH3 == null) return {};
+
+    return {
+      _courierH3!: 0.9,
+      // Mock surrounding cells with lower heat
+      '${_courierH3!}-n': 0.6,
+      '${_courierH3!}-s': 0.6,
+      '${_courierH3!}-e': 0.6,
+      '${_courierH3!}-w': 0.6,
+    };
+  }
+
   void _startOrderFlow(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -95,4 +121,5 @@ class CurrentOrdersPage extends ConsumerWidget {
     );
   }
 }
+
 

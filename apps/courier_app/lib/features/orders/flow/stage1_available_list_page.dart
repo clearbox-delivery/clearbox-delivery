@@ -100,7 +100,7 @@ class _Stage1AvailableListPageState extends ConsumerState<Stage1AvailableListPag
             return CBEmptyState(
               icon: Icons.delivery_dining_outlined,
               title: '目前無可接訂單',
-              description: _courierH3 != null 
+              description: _courierH3 != null
                   ? '附近 40 格範圍內暫無訂單'
                   : '附近訂單會即時顯示',
             );
@@ -130,7 +130,7 @@ class _Stage1AvailableListPageState extends ConsumerState<Stage1AvailableListPag
   List<Order> _sortByRTAsync(List<Order> orders) {
     // For synchronous rendering, use cached/fallback data
     // TODO: Pre-fetch distance data or use FutureBuilder for async sorting
-    
+
     // Attempt to use real distance data (will fallback if DistanceService returns null)
     final courierToMerchantEtas = <String, int?>{};
     final merchantToCustomerEtas = <String, int?>{};

@@ -169,19 +169,62 @@
 
 ### 4.4 熱度地圖（Heat Map）
 
-#### 暫行方案
-- **UI**：CurrentOrdersPage 顯示占位容器（灰底 + map icon + 文案）
-- **未實作**：
-  - H3 熱度計算（S, P10/P90, gamma 曲線, EMA 平滑）
-  - 顏色梯度渲染（白→黃→橘→紅）
-  - GPS 定位與 H3 格子中心
+#### 功能實作
+- **HeatMath 計算引擎**（`packages/domain/lib/src/heat/heat_math.dart`）：
+  - `computeHeatScore(waitingOrders, activeCouriers)`: S = waiting / (active + 1)
+  - `normalize(value, p10, p90)`: P10/P90 正規化 → [0, 1]
+  - `applyGamma(x, gamma=1.4)`: x^(1/γ) 層次強化
+  - `ema(prev, current, alpha=0.2)`: 指數移動平均（時間平滑）
+  - `computePercentiles(values)`: 計算 P10/P90
+  - `computeFinalHeat(...)`: 完整流程（S → normalize → gamma → EMA）
+
+- **HeatMapWidget**（`apps/courier_app/lib/features/heat/presentation/heat_map_widget.dart`）：
+  - 輸入：`centerH3` (String?), `heatValues` (Map<String, double>)
+  - 簡化 3x3 網格（中心 + 8 鄰居），完整 k=40 網格需 Canvas/CustomPaint
+  - 顏色映射：White (0) → Yellow (0.33) → Orange (0.66) → Red (1)
+  - 中心格顯示定位 icon (`my_location`)
+  - 圖例：低/中/高（顏色圓點 + 文字）
+  - GPS 未取得時顯示 placeholder（「取得位置中...」）
+
+- **CurrentOrdersPage 整合**：
+  - GPS→H3 初始化（同 Stage1）
+  - 顯示 `HeatMapWidget` 於熱度視窗區塊
+  - Mock 熱度資料（中心 0.9，鄰居 0.6）
+
+#### 暫行方案（資料來源）
+- **熱度資料**：
+  - 當前為前端 mock（中心最高，鄰居次之）
+  - 未查詢實際 `waitingOrders` 與 `activeCouriers` 數量
+- **網格範圍**：
+  - 簡化為 3x3（9 格），完整 k=40 需 81x81 或動態範圍
+- **更新頻率**：
+  - 當前為靜態（頁面載入時計算一次）
+  - 未實作 30 秒定時更新與 EMA 平滑
+
+#### 測試
+- **單元測試**（7 測試，全通過）：
+  - `packages/domain/test/heat_math_test.dart`
+  - TC-COU-HEAT-001: 基本 heat score 計算
+  - TC-COU-HEAT-002: P10/P90 正規化（含邊界）
+  - TC-COU-HEAT-003: Gamma 曲線（monotonic）
+  - TC-COU-HEAT-004: EMA 平滑
+  - TC-COU-HEAT-005: P10/P90 百分位計算
+  - TC-COU-HEAT-006: 完整流程（無 EMA）
+  - TC-COU-HEAT-007: 完整流程（含 EMA）
 
 #### 未來改進
-- 實作 `packages/domain/lib/src/heat/heat_math.dart`（熱度計算公式）
-- `HeatMapWidget` 繪製顏色梯度
-- 整合 GPS 取得當前 H3 cell (res=10)
-- 查詢 k=40 範圍內格子的訂單數與外送員數
-- 前端即時計算 S → 正規化 → gamma 調整 → EMA 平滑
+- **資料來源**：
+  - 後端 RPC/View 查詢 k=40 範圍內各格子的 `(waitingOrders, activeCouriers)`
+  - 或 Realtime 訂閱格子統計資料
+- **完整網格**：
+  - 使用 Canvas/CustomPaint 繪製 k=40 完整範圍
+  - 動態縮放與平移
+- **即時更新**：
+  - 30 秒定時器更新熱度資料
+  - EMA 平滑避免閃爍（`previousHeat` 持久化）
+- **互動**：
+  - 點擊格子顯示該區訂單數與外送員數
+  - 縮放與拖曳手勢
 
 ---
 
@@ -238,8 +281,9 @@
 - [x] Phase 4.2：接單流程（Stage 1–4）骨架
 - [x] Phase 4.2+：R/T 排序邏輯與 fallback
 - [x] Phase 4.3：GPS→H3 與 k=40 範圍過濾（客端）
+- [x] Phase 4.4：熱度地圖最小實作（HeatMath + 3x3 網格 + mock 資料）
 - [ ] Phase 4.3+：OSRM 表建立與真實 ETA 整合
-- [ ] Phase 4.4：熱度地圖完整實作
+- [ ] Phase 4.4+：熱度地圖完善（實際資料查詢、k=40 完整網格、定時更新）
 - [ ] Phase 4.5：KYC 流程（證件拍攝與上傳）
 - [ ] Phase 4.6：照片驗證與取餐碼
 - [ ] Phase 4.7：History/Account 頁面
@@ -247,6 +291,6 @@
 
 ---
 
-**版本**：Phase 4 Courier App 骨架完成
+**版本**：Phase 4.4 Heat Map 最小實作完成  
 **更新日期**：2025-01-15
 

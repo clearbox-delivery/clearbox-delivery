@@ -1,0 +1,57 @@
+feat(phase4): enable GPS→H3 + k=40 range filtering [REQ-COU-FLOW-003/TC-COU-*]
+
+- GPS→H3 integration complete:
+  - Stage1 initState fetches GPSService.getCurrentPosition()
+  - Converts to H3 res=10 using H3Service.toH3Res10()
+  - Web/Dev fallback: Taipei 101 (25.0340, 121.5645) → H3 cell "25034:121564"
+  - Production/Real device: GPS获取实际位置，動態 H3 cell
+  - Handles GPS failure gracefully (courierH3 = null, shows all orders)
+
+- H3 k=40 range filtering (client-side):
+  - Uses H3Service.isWithinDistance(courierH3, merchantH3, 40)
+  - Filters availableOrders where merchant H3 within 40 grid cells
+  - If order.h3Merchant is null, includes order (no filtering)
+  - If courierH3 is null (GPS unavailable), no filtering applied
+  - EmptyState message adapts: "附近 40 格範圍內暫無訂單" vs "附近訂單會即時顯示"
+
+- R/T sorting maintained:
+  - RTCalculator.sortByRT() unchanged
+  - Distance ETAs still use fallback (5min) due to h3_distance_matrix table not existing
+  - Formula ready to auto-enable real distances once table available
+
+- Design Tokens compliance maintained
+- List stability with Key maintained
+
+- Updated docs/PHASE4_NOTES.md: Section 4.2 Stage1
+  - GPS→H3 integration status (complete with fallback)
+  - H3 k=40 filtering current implementation (client-side)
+  - Actual effects in web/dev vs production
+  - Future improvements (backend pre-filtering, real-time GPS updates)
+  - Updated gaps: OSRM table pending, async ETA query strategy needed
+
+Acceptance:
+- [x] GPS→H3 integration functional (fallback to Taipei 101 in web/dev)
+- [x] H3 k=40 range filtering active (client-side, graceful when GPS unavailable)
+- [x] R/T sorting not crashed (fallback strategy)
+- [x] EmptyState adapts to courierH3 availability
+- [x] UI uses Design Tokens, list Key stable
+- [x] docs/PHASE4_NOTES.md updated with GPS/H3 status
+- [x] No docs/archive/ modifications
+
+Known gaps (documented):
+- h3_distance_matrix table not created (DistanceService returns null)
+- Async ETA queries need FutureBuilder or caching strategy
+- Backend H3 filtering for reduced transmission
+- Real-time GPS stream monitoring
+
+Current behavior (web/dev):
+- Courier location: Taipei 101 (fixed)
+- Range filter: k=40 from Taipei 101 H3 cell
+- R/T sorting: Uses fallback ETAs (5min), mainly sorts by deliveryPrice and prepTime
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Tests:
+cd packages/core_data && dart test test/rt_calculator_test.dart
+
