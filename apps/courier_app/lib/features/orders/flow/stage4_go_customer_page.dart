@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:core_data/core_data.dart';
 import 'package:supabase_client/supabase_client.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 
 /// Stage 4: Go to Customer (前往顧客)
@@ -19,6 +22,7 @@ class Stage4GoCustomerPage extends ConsumerStatefulWidget {
 
 class _Stage4GoCustomerPageState extends ConsumerState<Stage4GoCustomerPage> {
   bool _isCompleting = false;
+  String? _deliveryPhotoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -140,12 +144,43 @@ class _Stage4GoCustomerPageState extends ConsumerState<Stage4GoCustomerPage> {
               icon: Icons.phone_outlined,
             ),
 
-            const SizedBox(height: DesignTokens.sp4),
+            const SizedBox(height: DesignTokens.sp6),
+
+            // Delivery photo upload
+            if (_deliveryPhotoUrl != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: DesignTokens.sp4),
+                height: 150,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+                  border: Border.all(color: DesignTokens.border),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+                  child: Image.network(
+                    _deliveryPhotoUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.error),
+                  ),
+                ),
+              ),
+
+            CBButton(
+              text: _deliveryPhotoUrl == null ? '送達拍照' : '重新拍照',
+              onPressed: _handleTakeDeliveryPhoto,
+              variant: CBButtonVariant.secondary,
+              size: CBButtonSize.large,
+              icon: Icons.camera_alt,
+            ),
+
+            const SizedBox(height: DesignTokens.sp6),
 
             // Complete delivery button
             CBButton(
               text: '完成送達',
-              onPressed: _isCompleting ? null : () => _handleComplete(context),
+              onPressed: (_deliveryPhotoUrl != null && !_isCompleting)
+                  ? () => _handleComplete(context)
+                  : null,
               isLoading: _isCompleting,
               size: CBButtonSize.large,
             ),
@@ -155,12 +190,108 @@ class _Stage4GoCustomerPageState extends ConsumerState<Stage4GoCustomerPage> {
     );
   }
 
+  Future<void> _handleTakeDeliveryPhoto() async {
+    try {
+      List<int>? fileBytes;
+
+      if (kIsWeb) {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+        );
+        if (result != null && result.files.isNotEmpty) {
+          fileBytes = result.files.first.bytes;
+        }
+      } else {
+        final picker = ImagePicker();
+        final source = await showDialog<ImageSource>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('選擇來源'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('拍照'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('從相簿選擇'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+        );
+        if (source != null) {
+          final XFile? image = await picker.pickImage(source: source);
+          if (image != null) {
+            fileBytes = await image.readAsBytes();
+          }
+        }
+      }
+
+      if (fileBytes == null || fileBytes.isEmpty) return;
+
+      if (mounted) {
+        CBToast.show(
+          context: context,
+          message: '上傳中...',
+          type: CBToastType.info,
+        );
+      }
+
+      final storageService = ref.read(storageServiceProvider);
+      final url = await storageService.uploadOrderPhoto(
+        orderId: widget.order.id,
+        photoType: 'delivered',
+        fileBytes: fileBytes,
+      );
+
+      if (url != null && mounted) {
+        setState(() => _deliveryPhotoUrl = url);
+        CBToast.show(
+          context: context,
+          message: '送達照片上傳成功',
+          type: CBToastType.success,
+        );
+      } else if (mounted) {
+        CBToast.show(
+          context: context,
+          message: '上傳失敗，請重試',
+          type: CBToastType.error,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        CBToast.show(
+          context: context,
+          message: '拍照失敗: $e',
+          type: CBToastType.error,
+        );
+      }
+    }
+  }
+
   Future<void> _handleComplete(BuildContext context) async {
+    if (_deliveryPhotoUrl == null) {
+      CBToast.show(
+        context: context,
+        message: '請先拍攝送達照片',
+        type: CBToastType.error,
+      );
+      return;
+    }
+
     setState(() => _isCompleting = true);
 
     try {
-      // TODO: Implement delivery photo capture and status update to DELIVERED
-      await ref.read(orderServiceProvider).markDelivered(orderId: widget.order.id);
+      await ref.read(orderServiceProvider).markDelivered(
+        orderId: widget.order.id,
+        deliveryPhotoUrl: _deliveryPhotoUrl,
+      );
 
       if (context.mounted) {
         CBToast.show(

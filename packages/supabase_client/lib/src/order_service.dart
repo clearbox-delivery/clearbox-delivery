@@ -325,6 +325,24 @@ class AcceptOrderResult {
     final response = await query;
     return (response as List).map((json) => Order.fromJson(json)).toList();
   }
+
+  /// Verify pickup code (minimal difference stub)
+  /// [REQ-COU-VERIF-002] Pickup code verification
+  /// TODO: Backend RPC for actual verification against orders.pickup_code
+  Future<bool> verifyPickupCode({
+    required String orderId,
+    required String code,
+  }) async {
+    try {
+      // Minimal difference: Always return true for demo
+      // TODO: Call RPC verify_pickup_code(p_order_id, p_code) -> bool
+      // In production, should validate against orders.pickup_code column
+      await Future.delayed(const Duration(milliseconds: 300)); // Simulate network
+      return code.length == 6; // Basic validation
+    } catch (e) {
+      return false;
+    }
+  }
 }
 
 /// Order service provider

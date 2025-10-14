@@ -1,0 +1,57 @@
+feat(phase4): kyc status + documents backend integration [REQ-COU-KYC-003/TC-COU-KYC-*]
+
+- Backend Schema (Migration: 20250115000003):
+  - couriers table: added kyc_status (enum: pending/approved/rejected), kyc_submitted_at, kyc_reviewed_at, kyc_reviewer_notes
+  - kyc_documents table: tracks all uploaded documents with id, courier_id, document_type, storage_url, uploaded_at, status, reviewer_notes
+  - Unique constraint: (courier_id, document_type) - one document per type per courier
+  - Indexes: courier_id, uploaded_at, status
+  - RLS: Couriers INSERT/SELECT own; Admin policies TODO (documented)
+
+- Service Layer:
+  - KycService: getKycStatus, listKycDocuments, createKycDocument, markKycSubmitted, adminUpdateKycStatus (reserved)
+  - KycDocument model (Freezed): complete serialization
+  - KycStatus enum: pending/approved/rejected with displayName (Chinese)
+
+- Frontend - AccountPage:
+  - KYC status Badge with color-coded display (yellow/green/red)
+  - Pending/rejected: clickable to navigate to KYCFlowPage
+  - Approved: non-clickable, shows "已通過"
+  - Loads status via KycService in initState
+
+- Frontend - KYCFlowPage:
+  - Upload success: calls createKycDocument to record in kyc_documents table
+  - Submit all docs: calls markKycSubmitted, shows "等待審核" toast
+  - Error handling: warns if record write fails (storage success but DB fail)
+
+- Unit Tests (3 tests, all pass):
+  - TC-COU-KYC-006: KycStatus.fromString maps correctly (case insensitive)
+  - TC-COU-KYC-007: displayName returns Chinese text
+  - TC-COU-KYC-008: All enum values covered
+
+- Updated docs/PHASE4_NOTES.md: Section 4.5++
+  - Schema details (tables, indexes, RLS policies)
+  - Service layer API
+  - Frontend integration (AccountPage Badge, KYCFlowPage record writes)
+  - Testing status and future improvements (Admin Dashboard, image compression, watermarks)
+
+Acceptance:
+- [x] Account displays KYC status Badge (pending/approved/rejected)
+- [x] Pending/rejected can navigate to补件 flow
+- [x] KYCFlow uploads write to kyc_documents table
+- [x] Unit tests pass (status flow logic)
+- [x] RLS documented (admin policies marked as TODO)
+- [x] docs/PHASE4_NOTES.md updated
+- [x] No docs/archive/ modifications
+
+Benefits:
+- Complete audit trail for KYC documents
+- Admin-ready审核 workflow (backend schema complete)
+- Better UX (status visibility in Account page)
+- Rejection handling (can re-upload)
+
+Tests:
+cd packages/core_data && dart test
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+

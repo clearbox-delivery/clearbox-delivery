@@ -469,6 +469,88 @@
 
 ---
 
+### 4.7 照片驗證 + 取餐碼（最小可運行版）
+
+#### 功能實作（已完成）
+- **Stage2（到店拍照 + 取餐碼）**：
+  - `stage2_go_merchant_page.dart` 升級為 StatefulWidget
+  - **到店拍照**：
+    - 按鈕：「到店拍照」/「重新拍照」（CBButton secondary + camera_alt icon）
+    - Web：FilePicker.platform.pickFiles
+    - Mobile：ImagePicker（對話框選擇相機/相簿）
+    - 上傳：`StorageService.uploadOrderPhoto(orderId, 'pickup', fileBytes)`
+    - 預覽：Image.network 顯示縮圖（150px 高度，圓角 md，border）
+    - 成功：Toast「到店照片上傳成功」
+  - **取餐碼驗證**：
+    - CBInput（6 位數，數字鍵盤，maxLength=6）
+    - 驗證按鈕：呼叫 `OrderService.verifyPickupCode(orderId, code)`
+    - 成功：顯示綠色 check icon（suffixIcon），Toast「取餐碼驗證成功」，`_codeVerified = true`
+    - 失敗：Toast「取餐碼錯誤，請重新輸入」
+    - Stub 邏輯：`code.length == 6` 即視為成功（文件化為最小差異）
+  - **進入 Stage3 條件**：
+    - 必須：`_pickupPhotoUrl != null && _codeVerified`
+    - 按鈕：「已取餐，前往送達」（disabled 直到條件滿足）
+
+- **Stage4（送達拍照）**：
+  - `stage4_go_customer_page.dart` 加入 `_deliveryPhotoUrl` 狀態
+  - **送達拍照**：
+    - 按鈕：「送達拍照」/「重新拍照」（CBButton secondary + camera_alt icon）
+    - 流程同 Stage2（Web/Mobile picker、上傳至 `order-photos/{orderId}/delivered.jpg`）
+    - 預覽：Image.network 縮圖
+    - 成功：Toast「送達照片上傳成功」
+  - **完成送達條件**：
+    - 必須：`_deliveryPhotoUrl != null`
+    - 按鈕：「完成送達」（disabled 直到有照片）
+    - 呼叫：`markDelivered(orderId, deliveryPhotoUrl)`
+
+#### 服務層（已完成）
+- **StorageService.uploadOrderPhoto**（`packages/supabase_client/lib/src/storage_service.dart`）：
+  - 參數：`orderId`, `photoType` ('pickup'/'delivered'), `fileBytes`, `fileExtension`
+  - 上傳至：`storage.from('order-photos').uploadBinary('{orderId}/{photoType}.jpg', fileBytes)`
+  - 返回：public URL（成功）或 null（失敗）
+  - FileOptions：`upsert: true`, `contentType: image/*`
+- **OrderService.verifyPickupCode**（`packages/supabase_client/lib/src/order_service.dart`）：
+  - 參數：`orderId`, `code`
+  - 當前：Stub（`code.length == 6` 即返回 true）
+  - TODO：後端 RPC `verify_pickup_code(p_order_id, p_code)` 查詢 `orders.pickup_code` 欄位
+- **OrderService.markDelivered**：
+  - 已支援 `deliveryPhotoUrl` 可選參數（傳至 RPC `mark_delivered`）
+
+#### Storage Bucket（已建立）
+- **order-photos**（`infra/supabase/migrations/20250115000001_storage_buckets.sql`）：
+  - 路徑：`{orderId}/{photoType}.jpg`
+  - 大小限制：10MB
+  - MIME types：`image/jpeg`, `image/png`, `image/jpg`
+  - RLS：
+    - INSERT：Courier assigned to order can upload
+    - SELECT：Order participants (courier/merchant/customer) can read
+  - 已完整實作（不需額外 migration）
+
+#### 測試（已完成）
+- **單元測試**（`packages/core_data/test/photo_verification_test.dart`，6 測試，全通過）：
+  - TC-COU-VERIF-001：Pickup photo URL 保存
+  - TC-COU-VERIF-002：Delivery photo URL 保存
+  - TC-COU-VERIF-003：Pickup code 長度驗證（6 位數）
+  - TC-COU-VERIF-004：Pickup code stub 驗證邏輯
+  - TC-COU-VERIF-005：Stage2 進入條件（photo + code）
+  - TC-COU-VERIF-006：Stage4 進入條件（photo）
+
+#### 已知缺口與待辦
+- **後端欄位**：
+  - `orders.pickup_code`（text）：建立訂單時生成 6 位碼（文件化建議）
+  - `orders.pickup_photo_url`、`delivered_photo_url`（可選，或僅存於 Storage）
+  - RPC：`verify_pickup_code(p_order_id, p_code) -> bool`（查表驗證）
+- **前端增強**：
+  - 影像壓縮（`image` package，減少上傳大小）
+  - 上傳進度條（Storage SDK 可能不支援 progress callback，可用 indeterminate）
+  - 照片預覽大圖（tap 縮圖開 fullscreen）
+  - 重拍確認對話框
+- **安全性**：
+  - 照片浮水印（時間戳、訂單編號）
+  - GPS 定位驗證（照片 EXIF 或手動記錄）
+
+---
+
 ### 4.6 歷史訂單與帳號管理（History/Account）
 
 #### History 頁面實作
@@ -606,12 +688,13 @@
 - [x] Phase 4.5++：KYC 完整串接（kyc_status/kyc_documents + AccountPage Badge + 單元測試）
 - [x] Phase 4.8：RPC 替代 REST（accept_order/mark_delivered 原子化）
 - [x] Phase 4.8+：整合測試骨架（Supabase Local 前置條件文件化）
+- [x] Phase 4.7：照片驗證 + 取餐碼（Stage2/4 拍照 + 取餐碼 stub）
 - [ ] Phase 4.3+++：OSRM 資料導入（由管理員執行 ETL，導入 300 萬筆）
 - [ ] Phase 4.5+++：KYC 管理員審核（Admin Dashboard + RLS + 推播通知）
-- [ ] Phase 4.7：照片驗證與取餐碼（到店/送達驗證流程）
+- [ ] Phase 4.7+：取餐碼後端整合（orders.pickup_code + RPC + 生成邏輯）
 - [ ] Phase 4.9：History/Account 後端同步（狀態、個人資料、CSV 匯出）
 
 ---
 
-**版本**：Phase 4.5++ KYC 完整串接完成  
+**版本**：Phase 4.7 照片驗證 + 取餐碼完成  
 **更新日期**：2025-01-15

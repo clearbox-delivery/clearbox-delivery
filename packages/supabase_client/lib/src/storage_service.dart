@@ -48,17 +48,33 @@ class StorageService {
   }
 
   /// Upload order photo (arrival at merchant, delivery to customer)
+  /// [REQ-COU-VERIF-001] Photo verification for pickup and delivery
   /// Bucket: order-photos/{orderId}/{photoType}.jpg
   Future<String?> uploadOrderPhoto({
     required String orderId,
-    required String photoType, // 'merchant_arrival', 'customer_delivery'
+    required String photoType, // 'pickup', 'delivered'
     required List<int> fileBytes,
+    String fileExtension = 'jpg',
   }) async {
     try {
-      final path = '$orderId/$photoType.jpg';
+      final path = '$orderId/$photoType.$fileExtension';
 
-      // TODO: Actual upload
-      return 'https://mock-storage.supabase.co/order-photos/$path';
+      await _client.storage
+          .from('order-photos')
+          .uploadBinary(
+            path,
+            fileBytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: 'image/$fileExtension',
+            ),
+          );
+
+      final publicUrl = _client.storage
+          .from('order-photos')
+          .getPublicUrl(path);
+
+      return publicUrl;
     } catch (e) {
       return null;
     }

@@ -2,14 +2,14 @@
 -- [REQ-COU-KYC-003] Backend integration for KYC verification
 
 -- Add kyc_status to couriers table
-DO $$ 
+DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'kyc_status_enum') THEN
     CREATE TYPE kyc_status_enum AS ENUM ('pending', 'approved', 'rejected');
   END IF;
 END $$;
 
-ALTER TABLE couriers 
+ALTER TABLE couriers
 ADD COLUMN IF NOT EXISTS kyc_status kyc_status_enum DEFAULT 'pending',
 ADD COLUMN IF NOT EXISTS kyc_submitted_at TIMESTAMPTZ,
 ADD COLUMN IF NOT EXISTS kyc_reviewed_at TIMESTAMPTZ,
