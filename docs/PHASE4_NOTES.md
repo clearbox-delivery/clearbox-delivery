@@ -221,7 +221,7 @@
 
 ### 4.4 熱度地圖（Heat Map）
 
-#### 功能實作
+#### 功能實作（已完成 Phase 4.4+）
 - **HeatMath 計算引擎**（`packages/domain/lib/src/heat/heat_math.dart`）：
   - `computeHeatScore(waitingOrders, activeCouriers)`: S = waiting / (active + 1)
   - `normalize(value, p10, p90)`: P10/P90 正規化 → [0, 1]
@@ -230,53 +230,74 @@
   - `computePercentiles(values)`: 計算 P10/P90
   - `computeFinalHeat(...)`: 完整流程（S → normalize → gamma → EMA）
 
+- **HeatPaintUtils**（`apps/courier_app/lib/features/heat/presentation/heat_paint_utils.dart`）：
+  - `heatToColor(heat)`: 熱度值映射至顏色（White → Yellow → Orange → Red）
+  - `h3OffsetToCanvas(q, r, cellSize)`: H3 軸向座標轉換至 Canvas 座標（平頂六角形佈局）
+  - `generateKRing(k)`: 產生 k-ring 範圍內所有格子（k=40 產生 ~4921 格）
+  - `isPointInHexagon(point, hexCenter, size)`: 點擊偵測（判斷點是否在六角形內）
+  - `canvasToH3Offset(point, cellSize)`: Canvas 座標反轉換至 H3 軸向座標
+
 - **HeatMapWidget**（`apps/courier_app/lib/features/heat/presentation/heat_map_widget.dart`）：
-  - 輸入：`centerH3` (String?), `heatValues` (Map<String, double>)
-  - 簡化 3x3 網格（中心 + 8 鄰居），完整 k=40 網格需 Canvas/CustomPaint
+  - ✅ **CustomPaint 全網格繪製**：以 `k=40` 繪製 ~4921 格子（平頂六角形）
+  - ✅ **30 秒定時更新**：`Timer.periodic(Duration(seconds: 30))`，自動重新查詢熱度資料
+  - ✅ **EMA 平滑**：保存 `_previousHeat`，使用 `alpha=0.2` 平滑更新，避免閃爍
+  - ✅ **點擊互動**：`GestureDetector.onTapUp` + `canvasToH3Offset` 識別格子，呼叫 `onCellTap` callback
   - 顏色映射：White (0) → Yellow (0.33) → Orange (0.66) → Red (1)
-  - 中心格顯示定位 icon (`my_location`)
-  - 圖例：低/中/高（顏色圓點 + 文字）
+  - 中心格顯示定位 icon (`my_location` 加陰影，白色，尺寸 24）
+  - 圖例：低/中/高（顏色圓點 + 文字），右上角半透明背景
   - GPS 未取得時顯示 placeholder（「取得位置中...」）
 
 - **CurrentOrdersPage 整合**：
   - GPS→H3 初始化（同 Stage1）
-  - 顯示 `HeatMapWidget` 於熱度視窗區塊
+  - 顯示 `HeatMapWidget` 於熱度視窗區塊（高度 300，圓角 md）
+  - `onCellTap` 回調顯示 `BottomSheet` 統計（等待訂單、活躍外送員，mock 資料）
   - Mock 熱度資料（中心 0.9，鄰居 0.6）
 
-#### 暫行方案（資料來源）
+#### 資料來源（當前狀態）
 - **熱度資料**：
-  - 當前為前端 mock（中心最高，鄰居次之）
-  - 未查詢實際 `waitingOrders` 與 `activeCouriers` 數量
-- **網格範圍**：
-  - 簡化為 3x3（9 格），完整 k=40 需 81x81 或動態範圍
+  - ✅ 前端 mock（中心最高，鄰居次之）
+  - ⚠️ 未查詢實際 `waitingOrders` 與 `activeCouriers` 數量（後端 RPC/View 待建立）
+  - 建議後端介面：
+    - RPC/View：`get_heat_stats(center_h3 text, k int) → TABLE(h3 text, waiting_orders int, active_couriers int)`
+    - 或 Realtime 訂閱：`heat_stats` 表（h3, waiting, couriers, updated_at）
 - **更新頻率**：
-  - 當前為靜態（頁面載入時計算一次）
-  - 未實作 30 秒定時更新與 EMA 平滑
+  - ✅ 30 秒定時更新（`Timer.periodic`）
+  - ✅ EMA 平滑（`alpha=0.2`，保存 `_previousHeat`）
+  - 效果：熱度變化緩和，不閃爍，半衰期約 2–3 分鐘
+- **效能最佳化**：
+  - ✅ `CustomPainter.shouldRepaint` 僅在 `heatValues/k/cellSize` 變化時重繪
+  - ✅ 瓦片化繪製（每格獨立 Path，Canvas batch draw）
+  - ⚠️ k=40 繪製 ~4921 格，cellSize=3.0 以確保在 300px 高度內可見
+  - 可選：分批 render（每 frame 繪製 100 格）、ViewportAware（僅繪製可見範圍）
 
 #### 測試
-- **單元測試**（7 測試，全通過）：
-  - `packages/domain/test/heat_math_test.dart`
-  - TC-COU-HEAT-001: 基本 heat score 計算
-  - TC-COU-HEAT-002: P10/P90 正規化（含邊界）
-  - TC-COU-HEAT-003: Gamma 曲線（monotonic）
-  - TC-COU-HEAT-004: EMA 平滑
-  - TC-COU-HEAT-005: P10/P90 百分位計算
-  - TC-COU-HEAT-006: 完整流程（無 EMA）
-  - TC-COU-HEAT-007: 完整流程（含 EMA）
+- **單元測試**（12 測試，全通過）：
+  - `packages/domain/test/heat_math_test.dart`（12 測試）
+    - TC-COU-HEAT-001: 基本 heat score 計算
+    - TC-COU-HEAT-002: P10/P90 正規化（含邊界）
+    - TC-COU-HEAT-003: Gamma 曲線（monotonic）
+    - TC-COU-HEAT-004: EMA 平滑
+    - TC-COU-HEAT-005: P10/P90 百分位計算
+    - TC-COU-HEAT-006: 完整流程（無 EMA）
+    - TC-COU-HEAT-007: 完整流程（含 EMA）
+    - TC-COU-HEAT-008: EMA 收斂（多輪迭代）
+    - TC-COU-HEAT-009: Gamma 單調性驗證
+    - TC-COU-HEAT-010: Normalize 處理 P10==P90
+    - TC-COU-HEAT-011: Normalize 夾緊極端值
+  - ⚠️ `heat_paint_utils` 測試移除（因 `dart:ui` 依賴，僅可在 Flutter 測試環境執行）
+  - 可選：Flutter Widget 測試（Golden/Integration）驗證熱度地圖渲染與互動
 
-#### 未來改進
+#### 已知缺口與待辦
 - **資料來源**：
   - 後端 RPC/View 查詢 k=40 範圍內各格子的 `(waitingOrders, activeCouriers)`
-  - 或 Realtime 訂閱格子統計資料
-- **完整網格**：
-  - 使用 Canvas/CustomPaint 繪製 k=40 完整範圍
-  - 動態縮放與平移
-- **即時更新**：
-  - 30 秒定時器更新熱度資料
-  - EMA 平滑避免閃爍（`previousHeat` 持久化）
-- **互動**：
-  - 點擊格子顯示該區訂單數與外送員數
-  - 縮放與拖曳手勢
+  - 或 Realtime 訂閱格子統計資料（`heat_stats` 表）
+- **進階互動**：
+  - 縮放與拖曳手勢（`InteractiveViewer` 或 `GestureDetector` 組合）
+  - 格子點擊高亮顯示（邊框/透明度）
+- **效能優化**：
+  - 分批 render（避免單 frame 繪製過多格子）
+  - Viewport 裁剪（僅繪製螢幕可見範圍格子）
+  - 使用 `Picture.toImage` 快取格子紋理
 
 ---
 
@@ -510,6 +531,7 @@
 - [x] Phase 4.2+：R/T 排序邏輯與 fallback
 - [x] Phase 4.3：GPS→H3 與 k=40 範圍過濾（客端）
 - [x] Phase 4.4：熱度地圖最小實作（HeatMath + 3x3 網格 + mock 資料）
+- [x] Phase 4.4+：熱度地圖完整化（CustomPaint k=40 全網格、30s 更新、EMA 平滑、點擊互動）
 - [x] Phase 4.3+：OSRM 查詢邏輯與真實 ETA 整合
 - [x] Phase 4.3++：OSRM Migration + 批量查詢 + LRU 快取 + ETL 文件
 - [x] Phase 4.6：History/Account 骨架（篩選、詳情、開關占位）
@@ -518,12 +540,11 @@
 - [x] Phase 4.8：RPC 替代 REST（accept_order/mark_delivered 原子化）
 - [x] Phase 4.8+：整合測試骨架（Supabase Local 前置條件文件化）
 - [ ] Phase 4.3+++：OSRM 資料導入（由管理員執行 ETL，導入 300 萬筆）
-- [ ] Phase 4.4+：熱度地圖完善（實際資料查詢、k=40 完整網格、定時更新）
 - [ ] Phase 4.5++：KYC 審核狀態（kyc_status/kyc_documents、壓縮/進度條）
 - [ ] Phase 4.7：照片驗證與取餐碼（到店/送達驗證流程）
 - [ ] Phase 4.9：History/Account 後端同步（狀態、個人資料、CSV 匯出）
 
 ---
 
-**版本**：Phase 4.8 RPC + 整合測試骨架完成
+**版本**：Phase 4.4+ Heat Map 完整化完成  
 **更新日期**：2025-01-15

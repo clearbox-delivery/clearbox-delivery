@@ -1,0 +1,70 @@
+feat(phase4): rpc for accept/deliver + integration tests [REQ-COU-FLOW-007/TC-COU-RPC-*]
+
+- Courier RPCs migration:
+  - infra/supabase/migrations/20250115000002_courier_rpcs.sql
+  - accept_order(p_order_id UUID) → JSONB:
+    - Atomic update: status = COURIER_ASSIGNED, courier_id = auth.uid()
+    - Optimistic lock: Only if status = WAITING_COURIER AND courier_id IS NULL
+    - Returns: {success: bool, order?: object, error_code?: string, message?: string}
+    - Error code: ERR_ALREADY_ASSIGNED (order already taken or unavailable)
+  - mark_delivered(p_order_id UUID, p_delivery_photo_url TEXT) → JSONB:
+    - Validation: Only assigned courier can mark
+    - Status check: Only PICKED_UP/DELIVERING allowed
+    - Returns: {success: bool, order?: object, error_code?: string, message?: string}
+    - Error code: ERR_INVALID_STATE (wrong status or not assigned to this courier)
+  - SECURITY DEFINER with GRANT to authenticated
+
+- OrderService switched to RPCs:
+  - packages/supabase_client/lib/src/order_service.dart
+  - acceptOrder: Calls accept_order RPC, handles error codes
+  - markDelivered: Calls mark_delivered RPC with optional photo URL
+  - Error handling: Returns AcceptOrderResult with success/error_code/message
+  - Replaced REST UPDATE with atomic RPC calls
+
+- Integration test skeleton:
+  - tests/integration/courier_rpc_test.dart
+  - 6 test cases (all skipped with prerequisites documented):
+    - TC-COU-RPC-001: accept_order success path
+    - TC-COU-RPC-002: accept_order conflict (already assigned)
+    - TC-COU-RPC-003: accept_order RLS (any authenticated courier can try)
+    - TC-COU-RPC-004: mark_delivered success path
+    - TC-COU-RPC-005: mark_delivered RLS negative (not assigned courier)
+    - TC-COU-RPC-006: mark_delivered invalid status
+  - Prerequisites documented: Supabase Local, migrations, test data, multiple courier JWTs
+
+- Updated docs/PHASE4_NOTES.md: Section 4.3
+  - OrderService now uses RPCs (not REST)
+  - Courier RPCs implementation details (params, returns, error codes)
+  - Integration test status (skeleton with skip + prerequisites)
+  - Known gaps updated (RPC complete, integration tests need Supabase Local)
+
+Acceptance:
+- [x] accept_order/mark_delivered RPCs created with atomic operations
+- [x] Error codes defined (ERR_ALREADY_ASSIGNED, ERR_INVALID_STATE)
+- [x] Frontend switched from REST to RPC
+- [x] Integration test skeleton with prerequisites documented
+- [x] Tests skipped with clear setup instructions
+- [x] docs/PHASE4_NOTES.md updated
+- [x] No docs/archive/ modifications
+
+Benefits:
+- Atomic operations prevent race conditions
+- RLS validation in database layer
+- Standardized error codes for UI handling
+- Better security (SECURITY DEFINER with proper checks)
+
+Prerequisites for running integration tests:
+1. supabase start
+2. supabase db push (apply migrations)
+3. Create test orders with WAITING_COURIER status
+4. Generate multiple courier JWTs for RLS testing
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Tests (unit tests still pass):
+cd packages/core_data && dart test
+
+Integration tests (when Supabase Local ready):
+dart test tests/integration/courier_rpc_test.dart
+

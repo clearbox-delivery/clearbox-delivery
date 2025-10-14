@@ -62,6 +62,8 @@ class _CurrentOrdersPageState extends ConsumerState<CurrentOrdersPage> {
             child: HeatMapWidget(
               centerH3: _courierH3,
               heatValues: _getMockHeatData(),
+              k: 40,
+              onCellTap: (h3Cell) => _showCellStats(context, h3Cell),
             ),
           ),
 
@@ -118,6 +120,81 @@ class _CurrentOrdersPageState extends ConsumerState<CurrentOrdersPage> {
       MaterialPageRoute(
         builder: (context) => const Stage1AvailableListPage(),
       ),
+    );
+  }
+
+  void _showCellStats(BuildContext context, String h3Cell) {
+    // Mock data for demonstration
+    // TODO: Fetch real stats from backend
+    final waitingOrders = _courierH3 != null && h3Cell.contains(_courierH3!) ? 8 : 3;
+    final activeCouriers = _courierH3 != null && h3Cell.contains(_courierH3!) ? 2 : 1;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(DesignTokens.sp4),
+        decoration: const BoxDecoration(
+          color: DesignTokens.bg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(DesignTokens.radiusLg)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '區域統計',
+              style: TextStyle(
+                fontSize: DesignTokens.fsLg,
+                fontWeight: FontWeight.bold,
+                color: DesignTokens.textPrimary,
+              ),
+            ),
+            const SizedBox(height: DesignTokens.sp2),
+            Text(
+              'H3 Cell: $h3Cell',
+              style: const TextStyle(
+                fontSize: DesignTokens.fsSm,
+                color: DesignTokens.textMuted,
+              ),
+            ),
+            const SizedBox(height: DesignTokens.sp3),
+            _buildStatRow('等待訂單', waitingOrders.toString(), Icons.shopping_bag),
+            const SizedBox(height: DesignTokens.sp2),
+            _buildStatRow('活躍外送員', activeCouriers.toString(), Icons.delivery_dining),
+            const SizedBox(height: DesignTokens.sp3),
+            CBButton(
+              text: '關閉',
+              onPressed: () => Navigator.of(context).pop(),
+              variant: CBButtonVariant.secondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatRow(String label, String value, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: DesignTokens.textSecondary),
+        const SizedBox(width: DesignTokens.sp2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: DesignTokens.fsMd,
+            color: DesignTokens.textSecondary,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: DesignTokens.fsLg,
+            fontWeight: FontWeight.bold,
+            color: DesignTokens.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 }
