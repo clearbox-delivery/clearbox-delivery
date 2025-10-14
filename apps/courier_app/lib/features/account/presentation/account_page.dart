@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:core_data/core_data.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:courier_app/widgets/app_bottom_nav.dart';
+import 'package:go_router/go_router.dart';
 
 /// Courier Account Page
 /// [courier_app_whitepaper.md Section 6]
@@ -17,6 +19,32 @@ class AccountPage extends ConsumerStatefulWidget {
 class _AccountPageState extends ConsumerState<AccountPage> {
   bool _isAcceptingOrders = true;
   bool _isPushEnabled = true;
+  KycStatus? _kycStatus;
+  bool _kycLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadKycStatus();
+  }
+
+  Future<void> _loadKycStatus() async {
+    final authService = ref.read(authServiceProvider);
+    final courierId = authService.currentUserId;
+    if (courierId == null) {
+      setState(() => _kycLoading = false);
+      return;
+    }
+
+    final kycService = ref.read(kycServiceProvider);
+    final status = await kycService.getKycStatus(courierId);
+    if (mounted) {
+      setState(() {
+        _kycStatus = status ?? KycStatus.pending;
+        _kycLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +90,13 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                 ),
               ],
             ),
+          ),
+
+          const SizedBox(height: DesignTokens.sp4),
+
+          // KYC Status Section
+          CBCard(
+            child: _buildKycStatusTile(),
           ),
 
           const SizedBox(height: DesignTokens.sp4),
@@ -329,5 +364,90 @@ class _AccountPageState extends ConsumerState<AccountPage> {
         vertical: DesignTokens.sp2,
       ),
     );
+  }
+
+  Widget _buildKycStatusTile() {
+    if (_kycLoading) {
+      return const ListTile(
+        leading: Icon(Icons.verified_user_outlined, color: DesignTokens.textSecondary),
+        title: Text('KYC 驗證'),
+        subtitle: Text('載入中...'),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: DesignTokens.sp4,
+          vertical: DesignTokens.sp2,
+        ),
+      );
+    }
+
+    final status = _kycStatus ?? KycStatus.pending;
+    final statusColor = _getKycStatusColor(status);
+    final canNavigateToKyc = status == KycStatus.pending || status == KycStatus.rejected;
+
+    return ListTile(
+      leading: Icon(
+        Icons.verified_user_outlined,
+        color: statusColor,
+      ),
+      title: const Text(
+        'KYC 驗證',
+        style: TextStyle(
+          fontSize: DesignTokens.fsMd,
+          color: DesignTokens.textPrimary,
+        ),
+      ),
+      subtitle: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.sp2,
+              vertical: DesignTokens.sp1,
+            ),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+            ),
+            child: Text(
+              status.displayName,
+              style: TextStyle(
+                fontSize: DesignTokens.fsXs,
+                color: statusColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          if (canNavigateToKyc) ...[
+            const SizedBox(width: DesignTokens.sp2),
+            Text(
+              status == KycStatus.rejected ? '請重新上傳' : '待完成',
+              style: const TextStyle(
+                fontSize: DesignTokens.fsSm,
+                color: DesignTokens.textSecondary,
+              ),
+            ),
+          ],
+        ],
+      ),
+      trailing: canNavigateToKyc
+          ? const Icon(Icons.chevron_right, color: DesignTokens.textMuted)
+          : null,
+      onTap: canNavigateToKyc
+          ? () => context.push('/kyc')
+          : null,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.sp4,
+        vertical: DesignTokens.sp2,
+      ),
+    );
+  }
+
+  Color _getKycStatusColor(KycStatus status) {
+    switch (status) {
+      case KycStatus.approved:
+        return DesignTokens.success;
+      case KycStatus.rejected:
+        return DesignTokens.danger;
+      case KycStatus.pending:
+        return DesignTokens.warning;
+    }
   }
 }

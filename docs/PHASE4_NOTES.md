@@ -339,10 +339,11 @@
   - FileOptions: `upsert: true`, `contentType: image/*`
   - 回傳 public URL
   - 錯誤處理：bucket 不存在時回傳 null（UI 顯示錯誤 Toast）
-- **上傳流程**：
+- **上傳流程**（已完整串接）：
   - 選擇/拍攝照片 → Toast「上傳中...」→ 呼叫 StorageService
-  - 成功：更新 state + Toast「上傳成功」+ 顯示綠色 check icon
-  - 失敗：Toast「上傳失敗，請重試（Storage bucket 可能尚未建立）」
+  - 成功：呼叫 `KycService.createKycDocument()` 寫入紀錄 → 更新 state + Toast「上傳成功」+ 顯示綠色 check icon
+  - 失敗：Toast「上傳失敗」或「上傳成功但紀錄寫入失敗」（警告）
+  - 全部完成：呼叫 `KycService.markKycSubmitted()` 標記提交時間
 
 #### Storage Bucket 實作（已完成）
 - **Migration**：`infra/supabase/migrations/20250115000001_storage_buckets.sql`
@@ -381,23 +382,88 @@
   - TC-COU-KYC-004: 證件類型驗證
   - TC-COU-KYC-005: 步驟進退驗證
 
+### 4.5++ KYC 完整串接（狀態欄位 + 文件紀錄 + UI 與 RLS）
+
+#### 後端 Schema（已完成）
+- **Migration**：`infra/supabase/migrations/20250115000003_kyc_status_and_documents.sql`
+- **couriers 表新增欄位**：
+  - `kyc_status`：`kyc_status_enum` (pending/approved/rejected，預設 pending)
+  - `kyc_submitted_at`：外送員提交所有文件的時間
+  - `kyc_reviewed_at`：管理員審核時間
+  - `kyc_reviewer_notes`：審核備註（駁回原因）
+  - 索引：`idx_couriers_kyc_status`
+- **kyc_documents 表**：
+  - 欄位：`id`, `courier_id`, `document_type`, `storage_url`, `uploaded_at`, `status`, `reviewer_notes`, `created_at`, `updated_at`
+  - 主鍵：`id (UUID)`
+  - 唯一鍵：`(courier_id, document_type)`（每種證件只能上傳一次，可 upsert）
+  - 索引：`(courier_id)`, `(uploaded_at)`, `(status)`
+- **RLS Policies**：
+  - `kyc_documents`：
+    - INSERT：Couriers can insert own documents (`auth.uid() = courier_id`)
+    - SELECT：Couriers can read own documents
+    - UPDATE/DELETE：保留（未開放，需 admin 權限）
+  - `couriers.kyc_status`：
+    - SELECT：Couriers can read own status（由既有 couriers RLS policy 涵蓋）
+    - UPDATE：保留（需 admin role policy，未在此 PR 實作）
+
+#### 服務層（已完成）
+- **KycService**（`packages/supabase_client/lib/src/kyc_service.dart`）：
+  - `getKycStatus(courierId) -> KycStatus?`：查詢外送員 KYC 狀態
+  - `listKycDocuments(courierId) -> List<KycDocument>`：查詢外送員所有證件紀錄
+  - `createKycDocument(courierId, documentType, storageUrl) -> KycDocument?`：上傳成功後建立紀錄
+  - `markKycSubmitted(courierId)`：標記提交時間（外送員完成所有步驟時）
+  - `adminUpdateKycStatus(courierId, status, reviewerNotes)`：管理員審核（保留接口，未在 Courier App 使用）
+- **KycDocument 模型**（`packages/core_data/lib/src/models/kyc_document.dart`）：
+  - Freezed 模型，含 `fromJson`/`toJson`
+- **KycStatus enum**：
+  - `pending`（審核中），`approved`（已通過），`rejected`（未通過）
+  - `displayName`：中文顯示名稱
+  - `fromString()`：大小寫不敏感轉換
+
+#### 前端整合（已完成）
+- **AccountPage**（`apps/courier_app/lib/features/account/presentation/account_page.dart`）：
+  - 顯示 KYC 狀態 Badge：
+    - Pending：黃色（`DesignTokens.warning`），顯示「待完成」，可點擊進入 KYCFlowPage
+    - Approved：綠色（`DesignTokens.success`），顯示「已通過」，不可點擊
+    - Rejected：紅色（`DesignTokens.danger`），顯示「請重新上傳」，可點擊補件
+  - `initState` 呼叫 `KycService.getKycStatus()` 載入狀態
+  - Badge 樣式：圓角容器 + 半透明背景 + 彩色文字
+- **KYCFlowPage**（`apps/courier_app/lib/features/kyc/presentation/kyc_flow_page.dart`）：
+  - `_handleUpload()` 上傳成功後：
+    - 呼叫 `StorageService.uploadKYCDocument()` 上傳檔案
+    - 呼叫 `KycService.createKycDocument()` 寫入紀錄至 `kyc_documents` 表
+    - 成功：Toast「上傳成功」+ 更新 state
+    - 失敗（寫入紀錄失敗）：Toast「上傳成功，但紀錄寫入失敗」（警告）
+  - `_submitKYC()` 完成所有步驟後：
+    - 呼叫 `KycService.markKycSubmitted()` 標記 `kyc_submitted_at`
+    - Toast「KYC 資料已提交，等待審核」
+    - 導航至 `/current-orders`
+
+#### 測試（已完成）
+- **單元測試**（`packages/core_data/test/kyc_status_test.dart`，3 測試，全通過）：
+  - TC-COU-KYC-006：`KycStatus.fromString()` 正確映射
+  - TC-COU-KYC-007：`displayName` 回傳中文文字
+  - TC-COU-KYC-008：所有 enum 值完整覆蓋
+- **整合測試**：
+  - 標記 `skip`（需 Supabase Local 與測試資料）
+  - 前置條件：`supabase start`、migrations applied、courier JWT
+
 #### 未來改進
 - **圖片優化**：
   - 壓縮與裁切（`image` package）
   - 自動旋轉與方向校正
   - 縮圖產生（加速載入）
-- **審核狀態**：
-  - `couriers` 表新增 `kyc_status` 欄位（pending/approved/rejected）
-  - `kyc_documents` 表記錄所有上傳檔案（URL、上傳時間、審核狀態）
-  - 審核駁回通知與重新上傳流程
-  - Account 頁顯示審核狀態與進度
+- **管理員審核**：
+  - Admin Dashboard 顯示待審核列表
+  - 審核通過/駁回按鈕
+  - RLS policy 加入 `admin` role 檢查（`auth.jwt() ->> 'role' = 'admin'`）
+  - 駁回通知（推播或 Email）
 - **安全性**：
   - 照片加浮水印（防盜用）
   - 敏感資料模糊處理（顯示時）
   - 審核後自動刪除或移至歸檔 bucket
-  - 管理員角色 RLS policy
 - **UX 優化**：
-  - 上傳進度條
+  - 上傳進度條（indeterminate 或百分比）
   - 照片預覽與重拍
   - 批量上傳（多張一次）
 
@@ -537,14 +603,15 @@
 - [x] Phase 4.6：History/Account 骨架（篩選、詳情、開關占位）
 - [x] Phase 4.5：KYC 流程骨架（Stepper + Storage 規劃 + 占位上傳）
 - [x] Phase 4.5+：KYC Storage 整合（file_picker/image_picker + 真實上傳 + RLS）
+- [x] Phase 4.5++：KYC 完整串接（kyc_status/kyc_documents + AccountPage Badge + 單元測試）
 - [x] Phase 4.8：RPC 替代 REST（accept_order/mark_delivered 原子化）
 - [x] Phase 4.8+：整合測試骨架（Supabase Local 前置條件文件化）
 - [ ] Phase 4.3+++：OSRM 資料導入（由管理員執行 ETL，導入 300 萬筆）
-- [ ] Phase 4.5++：KYC 審核狀態（kyc_status/kyc_documents、壓縮/進度條）
+- [ ] Phase 4.5+++：KYC 管理員審核（Admin Dashboard + RLS + 推播通知）
 - [ ] Phase 4.7：照片驗證與取餐碼（到店/送達驗證流程）
 - [ ] Phase 4.9：History/Account 後端同步（狀態、個人資料、CSV 匯出）
 
 ---
 
-**版本**：Phase 4.4+ Heat Map 完整化完成  
+**版本**：Phase 4.5++ KYC 完整串接完成  
 **更新日期**：2025-01-15

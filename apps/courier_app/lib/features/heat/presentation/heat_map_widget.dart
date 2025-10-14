@@ -292,7 +292,7 @@ class HeatMapPainter extends CustomPainter {
       final angle = (60 * i - 30) * 3.14159 / 180;
       final x = center.dx + size * (angle).cos();
       final y = center.dy + size * (angle).sin();
-      
+
       if (i == 0) {
         path.moveTo(x, y);
       } else {

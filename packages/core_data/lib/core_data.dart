@@ -8,6 +8,7 @@ export 'src/models/courier.dart';
 export 'src/models/customer.dart';
 export 'src/models/menu_item.dart';
 export 'src/models/user_address.dart';
+export 'src/models/kyc_document.dart';
 export 'src/enums/order_status.dart';
 export 'src/enums/actor_type.dart';
 export 'src/enums/event_type.dart';

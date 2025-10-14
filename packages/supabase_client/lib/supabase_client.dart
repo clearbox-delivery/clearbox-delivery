@@ -11,5 +11,6 @@ export 'src/device_service.dart';
 export 'src/address_service.dart';
 export 'src/distance_service.dart';
 export 'src/storage_service.dart';
+export 'src/kyc_service.dart';
 
 

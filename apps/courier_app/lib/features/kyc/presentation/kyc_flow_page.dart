@@ -323,14 +323,30 @@ class _KYCFlowPageState extends ConsumerState<KYCFlowPage> {
       );
 
       if (url != null && mounted) {
-        setState(() {
-          _documents[docKey] = url;
-        });
-        CBToast.show(
-          context: context,
-          message: '上傳成功',
-          type: CBToastType.success,
+        // Record document upload in kyc_documents table
+        final kycService = ref.read(kycServiceProvider);
+        final doc = await kycService.createKycDocument(
+          courierId: courierId,
+          documentType: docKey,
+          storageUrl: url,
         );
+
+        if (doc != null) {
+          setState(() {
+            _documents[docKey] = url;
+          });
+          CBToast.show(
+            context: context,
+            message: '上傳成功',
+            type: CBToastType.success,
+          );
+        } else if (mounted) {
+          CBToast.show(
+            context: context,
+            message: '上傳成功，但紀錄寫入失敗',
+            type: CBToastType.warning,
+          );
+        }
       } else if (mounted) {
         CBToast.show(
           context: context,
@@ -412,15 +428,23 @@ class _KYCFlowPageState extends ConsumerState<KYCFlowPage> {
   }
 
   Future<void> _submitKYC() async {
-    // TODO: Upload to Supabase Storage and update courier profile
-    CBToast.show(
-      context: context,
-      message: 'KYC 資料提交成功（開發中）',
-      type: CBToastType.success,
-    );
+    final authService = ref.read(authServiceProvider);
+    final courierId = authService.currentUserId;
 
-    // Navigate to CurrentOrders
+    if (courierId != null) {
+      // Mark KYC as submitted
+      final kycService = ref.read(kycServiceProvider);
+      await kycService.markKycSubmitted(courierId);
+    }
+
     if (mounted) {
+      CBToast.show(
+        context: context,
+        message: 'KYC 資料已提交，等待審核',
+        type: CBToastType.success,
+      );
+
+      // Navigate to CurrentOrders
       context.go('/current-orders');
     }
   }
