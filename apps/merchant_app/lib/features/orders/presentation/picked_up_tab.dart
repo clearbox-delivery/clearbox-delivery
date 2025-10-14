@@ -36,7 +36,7 @@ class PickedUpTab extends ConsumerWidget {
         }
 
         final allOrders = snapshot.data ?? [];
-        
+
         // Filter client-side for PICKED_UP (courier picked up, delivering)
         final pickedUpOrders = allOrders
             .where((o) => o.status == OrderStatus.pickedUp)
