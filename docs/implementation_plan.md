@@ -128,6 +128,8 @@ Status: APPROVED (policies aligned; no login-time device blocking, emulator-only
 
 ## Phase 3 – Merchant App
 
+**Note**: See `docs/PHASE3_NOTES.md` for temporary data sources (ETA/distance placeholders, promised time calculation using `created_at` instead of `accepted_at`).
+
 3.1 Login animation
 - Files: `apps/merchant_app/lib/features/auth/presentation/login_page.dart`
 - AC: Same as customer.

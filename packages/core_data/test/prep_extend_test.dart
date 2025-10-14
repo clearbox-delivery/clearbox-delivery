@@ -20,7 +20,7 @@ void main() {
     test('TC-MER-EXTEND-003: Upper bound enforced (max 90)', () {
       int prepTime = 85;
       prepTime += 10; // Would be 95
-      
+
       final adjusted = prepTime > 90 ? 90 : prepTime;
       expect(adjusted, equals(90));
     });
@@ -30,7 +30,7 @@ void main() {
       prepTime += 5; // 25
       prepTime += 10; // 35
       prepTime += 5; // 40
-      
+
       expect(prepTime, equals(40));
     });
 
@@ -38,11 +38,11 @@ void main() {
       final createdAt = DateTime(2024, 1, 1, 10, 0);
       final prepMinutes = 20;
       final promisedTime = createdAt.add(Duration(minutes: prepMinutes));
-      
+
       final now = DateTime(2024, 1, 1, 10, 25); // 5 minutes overdue
       final isOverdue = now.isAfter(promisedTime);
       final minutesOverdue = now.difference(promisedTime).inMinutes;
-      
+
       expect(isOverdue, isTrue);
       expect(minutesOverdue, equals(5));
     });

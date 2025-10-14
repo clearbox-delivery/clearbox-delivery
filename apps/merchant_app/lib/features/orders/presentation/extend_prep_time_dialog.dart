@@ -23,7 +23,7 @@ class _ExtendPrepTimeDialogState extends ConsumerState<ExtendPrepTimeDialog> {
 
     try {
       final orderService = ref.read(orderServiceProvider);
-      
+
       await orderService.merchantExtendPrepTime(
         orderId: widget.order.id,
         plusMinutes: plusMinutes,

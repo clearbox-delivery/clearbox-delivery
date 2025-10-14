@@ -61,7 +61,7 @@ class _CurrentOrdersPageState extends ConsumerState<CurrentOrdersPage>
             Tab(text: '待確認'),
             Tab(text: '待接單'),
             Tab(text: '準備中'),
-            Tab(text: '待取貨'),
+            Tab(text: '已取貨'),
           ],
         ),
       ),

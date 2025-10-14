@@ -38,7 +38,7 @@ class PreparingTab extends ConsumerWidget {
         }
 
         final allOrders = snapshot.data ?? [];
-        
+
         // Filter client-side for COURIER_ASSIGNED (preparing state)
         final preparingOrders = allOrders
             .where((o) => o.status == OrderStatus.courierAssigned)
@@ -82,8 +82,8 @@ class _PreparingCard extends ConsumerWidget {
     // Calculate promised pickup time and check if overdue
     final promisedTime = _calculatePromisedTime(order);
     final isOverdue = DateTime.now().isAfter(promisedTime);
-    final minutesOverdue = isOverdue 
-        ? DateTime.now().difference(promisedTime).inMinutes 
+    final minutesOverdue = isOverdue
+        ? DateTime.now().difference(promisedTime).inMinutes
         : 0;
 
     return CBCard(
@@ -308,7 +308,7 @@ class _PreparingCard extends ConsumerWidget {
         await ref.read(orderServiceProvider).merchantPrepReady(
           orderId: order.id,
         );
-        
+
         if (context.mounted) {
           CBToast.show(
             context: context,
