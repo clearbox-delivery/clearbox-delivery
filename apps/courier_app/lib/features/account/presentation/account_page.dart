@@ -135,17 +135,17 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                   value: _isAcceptingOrders,
                   onChanged: (value) async {
                     setState(() => _isAcceptingOrders = value);
-                    
+
                     final authService = ref.read(authServiceProvider);
                     final courierId = authService.currentUserId;
-                    
+
                     if (courierId != null) {
                       final courierService = ref.read(courierServiceProvider);
                       final success = await courierService.updateCourierSettings(
                         courierId: courierId,
                         isAcceptingOrders: value,
                       );
-                      
+
                       if (!success && mounted) {
                         CBToast.show(
                           context: context,
@@ -155,7 +155,7 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                         return;
                       }
                     }
-                    
+
                     if (mounted) {
                       CBToast.show(
                         context: context,
@@ -182,17 +182,17 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                   value: _isPushEnabled,
                   onChanged: (value) async {
                     setState(() => _isPushEnabled = value);
-                    
+
                     final authService = ref.read(authServiceProvider);
                     final courierId = authService.currentUserId;
-                    
+
                     if (courierId != null) {
                       final courierService = ref.read(courierServiceProvider);
                       final success = await courierService.updateCourierSettings(
                         courierId: courierId,
                         pushEnabled: value,
                       );
-                      
+
                       if (!success && mounted) {
                         CBToast.show(
                           context: context,
@@ -202,7 +202,7 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                         return;
                       }
                     }
-                    
+
                     if (mounted) {
                       CBToast.show(
                         context: context,

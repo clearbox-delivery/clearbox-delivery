@@ -34,7 +34,7 @@ void main() {
     test('TC-COU-ACC-006: Fallback when fields missing (simulates backend gap)', () {
       // Simulate response from backend without is_accepting_orders/push_enabled fields
       Map<String, dynamic>? mockResponse;
-      
+
       // Case 1: All fields present
       mockResponse = {
         'courier_id': 'c1',

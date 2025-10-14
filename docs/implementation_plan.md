@@ -183,17 +183,26 @@ Status: APPROVED (policies aligned; no login-time device blocking, emulator-only
 
 ---
 
-## Phase 5 – Tests, docs, and CI alignment
+## Phase 5 – Cross-domain features (Wallet, Notifications, Support)
 
-5.1 Unit/Integration/E2E updates
-- Files: under `tests/` and package tests
-- Actions: add tests for OTP timers, sorting S and R/T, heat math, realtime stability; update CI to run.
-- AC: All tests pass locally; CI green.
+**Status**: Phase 5.1 錢包/結算骨架已完成（詳見 `docs/PHASE5_NOTES.md`）
 
-5.2 Documentation updates
-- Files: `docs/customer_app_whitepaper.md`, `docs/merchant_app_whitepaper.md`, `docs/courier_app_whitepaper.md`, `docs/UI_GUIDELINES.md`
-- Actions: add missing implementation details discovered (dev bypass, notification payloads, CSV fields, proof‑of‑delivery media requirements).
-- AC: Docs and app align; ADR link if any deviation.
+5.1 錢包/結算（Courier Payouts）骨架
+- Models: `Payout`, `WalletTransaction` (Freezed)
+- Service: `WalletService` (getPayouts, getTransactions with mock fallback)
+- UI: `WalletPage` (Tabs: 結算/明細, EmptyState, RefreshIndicator)
+- AC: UI 可運行並顯示 mock 資料；後端表不存在時優雅 fallback；單元測試通過。
+
+5.2 通知中心
+- Models: `Notification` (type, title, message, createdAt, read)
+- Service: `NotificationsService` (mock fallback)
+- UI: `NotificationsPage` (未讀/全部 Tab)
+- AC: 同上。
+
+5.3 測試與文件完善
+- Files: under `tests/` and package tests; `docs/*_whitepaper.md`
+- Actions: add tests for OTP timers, sorting S and R/T, heat math, realtime stability; update CI to run; align docs with implementation.
+- AC: All tests pass locally; CI green; docs and app align.
 
 ---
 

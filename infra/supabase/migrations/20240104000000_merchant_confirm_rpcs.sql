@@ -37,6 +37,13 @@ BEGIN
   WHERE id = p_order_id
   RETURNING * INTO v_order;
 
+  -- Generate 6-digit pickup code (only if not already set)
+  -- [REQ-COU-VERIF-003] Auto-generate pickup code on first confirm
+  UPDATE orders
+  SET pickup_code = LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0')
+  WHERE id = p_order_id
+    AND pickup_code IS NULL;
+
   -- Write event to timeline
   INSERT INTO order_events (order_id, event_type, actor_type, actor_id, metadata)
   VALUES (
