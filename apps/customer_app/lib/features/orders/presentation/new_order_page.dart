@@ -31,11 +31,11 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
   @override
   void initState() {
     super.initState();
-    
+
     // Auto-show categories overlay if flagged
     // [customer_app_whitepaper.md Section 4.1] 預設顯示「今天想吃什麼？」
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_hasAutoShownCategories && 
+      if (!_hasAutoShownCategories &&
           widget.extra?['autoShowCategories'] == true) {
         _hasAutoShownCategories = true;
         _showCategoriesOverlay();
@@ -116,7 +116,7 @@ class _NewOrderPageState extends ConsumerState<NewOrderPage> {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
-        barrierColor: Colors.black.withOpacity(0.3),
+        barrierColor: DesignTokens.overlayScrim,
         pageBuilder: (context, animation, secondaryAnimation) {
           return const CategoriesOverlay();
         },

@@ -87,11 +87,11 @@ void main() {
 
     test('TC-SORT-005: Distance score uses exp decay with lambda=1500', () {
       final customerLoc = LatLng(25.0330, 121.5654);
-      
+
       // Merchant at exactly 1500m away
       // D = exp(-1500/1500) = exp(-1) ≈ 0.368
       // With R = 0.5 (mid meal count), S = 0.5 * 0.368 + 0.5 * 0.5 = 0.434
-      
+
       // For testing, use a known distance calculation
       // Create a merchant ~1500m away (rough)
       final merchantLoc = LatLng(25.0465, 121.5654); // ~1500m north

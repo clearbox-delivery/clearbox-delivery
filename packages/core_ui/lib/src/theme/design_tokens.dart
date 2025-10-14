@@ -27,6 +27,9 @@ class DesignTokens {
   // Text on colored backgrounds (inverse)
   static const Color textOnInverse = Color(0xFFFFFFFF);
 
+  // Overlay & Scrim
+  static const Color overlayScrim = Color(0x4D000000); // 30% black for modals/overlays
+
   // ============ Typography ============
 
   static const double fs2xl = 24.0;  // 1.5rem

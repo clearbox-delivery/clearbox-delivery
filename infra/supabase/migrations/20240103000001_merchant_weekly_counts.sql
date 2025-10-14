@@ -2,7 +2,7 @@
 -- [customer_app_whitepaper.md Section 4.4]
 -- [docs/PHASE2_DATA_SOURCES.md] Temporary column for MVP
 
-ALTER TABLE merchants 
+ALTER TABLE merchants
   ADD COLUMN IF NOT EXISTS weekly_meal_count INT DEFAULT 0,
   ADD COLUMN IF NOT EXISTS latitude NUMERIC(10, 8),
   ADD COLUMN IF NOT EXISTS longitude NUMERIC(11, 8);

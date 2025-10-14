@@ -53,7 +53,7 @@ class _SelectAddressGateState extends ConsumerState<SelectAddressGate> {
   void _selectAddress(UserAddress address) {
     // Store selected address in state management
     ref.read(selectedAddressProvider.notifier).selectAddress(address);
-    
+
     // Navigate to NewOrder with flag to auto-show categories
     // [customer_app_whitepaper.md Section 4.1] 預設顯示「今天想吃什麼？」
     context.go('/new-order', extra: {'autoShowCategories': true});
