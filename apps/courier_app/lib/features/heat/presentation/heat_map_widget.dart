@@ -32,7 +32,7 @@ class HeatMapWidget extends StatelessWidget {
         children: [
           // Heat grid (simplified: show center and 8 surrounding cells)
           _buildSimplifiedGrid(),
-          
+
           // Legend
           Positioned(
             top: DesignTokens.sp2,

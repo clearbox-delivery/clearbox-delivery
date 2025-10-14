@@ -23,7 +23,14 @@
 ##### 功能實作
 - **Realtime 串流**：使用 `RealtimeService.watchAvailableOrders(h3Cell?)`
 - **客端過濾**：僅顯示 `OrderStatus.waitingCourier`
-- **R/T 排序**：使用 `RTCalculator.sortByRT()`
+- **R/T 排序**（真實 ETA 已啟用）：
+  - 非同步策略：`FutureBuilder` 包裝 `_sortByRTWithRealETA()`
+  - 首次渲染：顯示未排序列表（或 fallback 排序）
+  - 背景查詢：批次抓取所有訂單的 `courier→merchant` 與 `merchant→customer` ETA
+  - 記憶體快取：避免重複查詢相同格子對（key: `"${from}->${to}"`）
+  - 查詢完成：列表重新排序（無閃爍，使用 Key 穩定）
+  - 若 OSRM 表不存在：`DistanceService` 回傳 `null` → RTCalculator 使用 fallback（5分鐘）
+- **R/T 公式**：
   - R = `order.deliveryPriceUserSet`
   - T = `max(courierToMerchantEta, prepTimeMinutes)` + `merchantToCustomerEta`
   - 最小 T = 5 分鐘（避免除法噪音）
@@ -67,9 +74,24 @@
 - **預計算策略**：
   - 使用自架 OSRM 伺服器批次計算所有格子對
   - 定期更新（路況變化）
-- **前端查詢**：
-  - `DistanceService` 查詢 `from_h3 = courierH3 AND to_h3 = merchantH3`
-  - 快取策略（可選）：本地存 k=40 範圍資料
+- **前端查詢**（已實作）：
+  - `DistanceService.getCourierToMerchantEta(courierH3, merchantH3) -> int?`
+  - `DistanceService.getMerchantToCustomerEta(merchantH3, customerH3) -> int?`
+  - 查詢樣例：
+    ```dart
+    final response = await _client
+        .from('h3_distance_matrix')
+        .select('time_minutes')
+        .eq('from_h3', courierH3)
+        .eq('to_h3', merchantH3)
+        .maybeSingle();
+    return response?['time_minutes'] as int?;
+    ```
+  - 若表不存在或查詢失敗：回傳 `null`（觸發 RTCalculator fallback 5分鐘）
+- **快取策略**（已實作）：
+  - Stage1 使用簡易記憶體快取 `Map<String, int?> _etaCache`
+  - Cache key: `"${from_h3}->${to_h3}"`
+  - 避免重複查詢相同格子對
 
 ##### 測試
 - **單元測試**（7 測試，全通過）：
@@ -291,6 +313,6 @@
 
 ---
 
-**版本**：Phase 4.4 Heat Map 最小實作完成  
+**版本**：Phase 4.4 Heat Map 最小實作完成
 **更新日期**：2025-01-15
 

@@ -1,0 +1,69 @@
+feat(phase4): courier heat map minimal implementation [REQ-COU-HEAT-001/TC-COU-HEAT-*]
+
+- HeatMath calculation engine complete:
+  - packages/domain/lib/src/heat/heat_math.dart
+  - computeHeatScore: S = waitingOrders / (activeCouriers + 1)
+  - normalize: P10/P90 percentile normalization to [0,1], handles edge cases
+  - applyGamma: x^(1/γ) curve (default γ=1.4) for visual distribution
+  - ema: Exponential moving average (α=0.2) for temporal smoothing
+  - computePercentiles: P10/P90 from value list
+  - computeFinalHeat: Full pipeline (S → normalize → gamma → EMA)
+
+- HeatMapWidget visualization:
+  - apps/courier_app/lib/features/heat/presentation/heat_map_widget.dart
+  - Simplified 3x3 grid (center + 8 neighbors, full k=40 needs Canvas)
+  - Color gradient: White (0) → Yellow (0.33) → Orange (0.66) → Red (1)
+  - Center cell shows my_location icon
+  - Legend: Low/Mid/High with color dots
+  - Placeholder when GPS unavailable ("取得位置中...")
+
+- CurrentOrdersPage integration:
+  - GPS→H3 initialization (same as Stage1)
+  - Displays HeatMapWidget in heat window area
+  - Mock heat data (center 0.9, neighbors 0.6)
+
+- Heat math unit tests (7 tests, all pass):
+  - packages/domain/test/heat_math_test.dart
+  - TC-COU-HEAT-001: Basic heat score S calculation
+  - TC-COU-HEAT-002: P10/P90 normalization with edge cases
+  - TC-COU-HEAT-003: Gamma curve (monotonic, boosts mid-range)
+  - TC-COU-HEAT-004: EMA smoothing with alpha validation
+  - TC-COU-HEAT-005: P10/P90 percentile computation
+  - TC-COU-HEAT-006: Full pipeline without EMA
+  - TC-COU-HEAT-007: Full pipeline with EMA
+
+- Design Tokens compliance: All colors use DesignTokens or lerp gradients
+
+- Updated docs/PHASE4_NOTES.md: Section 4.4 Heat Map
+  - HeatMath implementation details
+  - HeatMapWidget features and limitations
+  - Mock data source (current)
+  - Future improvements (real data query, full k=40 grid, 30s updates, interactions)
+
+Placeholders documented:
+- Heat data: Frontend mock (not querying actual waiting/active counts)
+- Grid range: Simplified 3x3 (full k=40 needs 81x81 or dynamic)
+- Update frequency: Static (not 30s timer + EMA smoothing)
+- Interactions: No cell click details, zoom, or pan
+
+Acceptance:
+- [x] CurrentOrders displays heat window with color-coded cells
+- [x] Color mapping consistent (white→yellow→orange→red gradient)
+- [x] No flickering (static rendering, smooth transitions when data changes)
+- [x] HeatMath unit tests pass (7/7)
+- [x] docs/PHASE4_NOTES.md updated with heat map implementation and gaps
+- [x] No docs/archive/ modifications
+
+Known gaps (documented):
+- Real heat data query (backend RPC/View for k=40 cell stats)
+- Full k=40 grid rendering (Canvas/CustomPaint)
+- 30s update timer with EMA smoothing
+- Cell interaction (tap to show stats)
+- Zoom and pan gestures
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Tests:
+cd packages/domain && dart test test/heat_math_test.dart
+

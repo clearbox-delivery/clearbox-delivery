@@ -15,13 +15,13 @@ void main() {
     test('TC-COU-HEAT-002: Normalize with P10/P90', () {
       // value between p10 and p90
       expect(HeatMath.normalize(value: 5.0, p10: 0.0, p90: 10.0), closeTo(0.5, 0.01));
-      
+
       // value below p10
       expect(HeatMath.normalize(value: -5.0, p10: 0.0, p90: 10.0), 0.0);
-      
+
       // value above p90
       expect(HeatMath.normalize(value: 15.0, p10: 0.0, p90: 10.0), 1.0);
-      
+
       // edge case: p10 == p90
       expect(HeatMath.normalize(value: 5.0, p10: 5.0, p90: 5.0), 0.5);
     });
@@ -35,7 +35,7 @@ void main() {
 
       // Monotonic: higher input → higher output
       expect(HeatMath.applyGamma(0.3, gamma: 1.4), lessThan(HeatMath.applyGamma(0.7, gamma: 1.4)));
-      
+
       // Edge cases
       expect(HeatMath.applyGamma(0.0), 0.0);
       expect(HeatMath.applyGamma(1.0), 1.0);
@@ -44,10 +44,10 @@ void main() {
     test('TC-COU-HEAT-004: EMA smoothing', () {
       // H_t = 0.2 * 0.8 + 0.8 * 0.5 = 0.56
       expect(HeatMath.ema(previous: 0.5, current: 0.8, alpha: 0.2), closeTo(0.56, 0.01));
-      
+
       // No previous (use current)
       expect(HeatMath.ema(previous: 0.0, current: 0.8, alpha: 0.2), closeTo(0.16, 0.01));
-      
+
       // Alpha edge cases
       expect(() => HeatMath.ema(previous: 0.5, current: 0.8, alpha: -0.1), throwsArgumentError);
       expect(() => HeatMath.ema(previous: 0.5, current: 0.8, alpha: 1.5), throwsArgumentError);
@@ -56,16 +56,16 @@ void main() {
     test('TC-COU-HEAT-005: Compute P10/P90 percentiles', () {
       final values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
       final (p10, p90) = HeatMath.computePercentiles(values);
-      
+
       // P10 = index 1 → 2.0, P90 = index 9 → 10.0
       expect(p10, closeTo(2.0, 0.1));
       expect(p90, closeTo(10.0, 0.1));
-      
+
       // Empty list
       final (p10Empty, p90Empty) = HeatMath.computePercentiles([]);
       expect(p10Empty, 0.0);
       expect(p90Empty, 0.0);
-      
+
       // Single value
       final (p10Single, p90Single) = HeatMath.computePercentiles([5.0]);
       expect(p10Single, 5.0);

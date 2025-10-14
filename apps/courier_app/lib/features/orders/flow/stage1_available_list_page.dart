@@ -18,6 +18,7 @@ class Stage1AvailableListPage extends ConsumerStatefulWidget {
 
 class _Stage1AvailableListPageState extends ConsumerState<Stage1AvailableListPage> {
   String? _courierH3;
+  final Map<String, int?> _etaCache = {}; // Simple in-memory cache
 
   @override
   void initState() {
@@ -106,19 +107,24 @@ class _Stage1AvailableListPageState extends ConsumerState<Stage1AvailableListPag
             );
           }
 
-          // Sort by R/T with real distance data
-          final sortedOrders = _sortByRTAsync(availableOrders);
+          // Sort by R/T with real distance data (async)
+          return FutureBuilder<List<Order>>(
+            future: _sortByRTWithRealETA(availableOrders),
+            builder: (context, sortSnapshot) {
+              final sortedOrders = sortSnapshot.data ?? availableOrders;
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(DesignTokens.sp4),
-            itemCount: sortedOrders.length,
-            separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.sp3),
-            itemBuilder: (context, index) {
-              final order = sortedOrders[index];
-              return _AvailableOrderCard(
-                key: Key('courier-available-${order.id}'),
-                order: order,
-                onAccept: () => _handleAcceptOrder(context, ref, order),
+              return ListView.separated(
+                padding: const EdgeInsets.all(DesignTokens.sp4),
+                itemCount: sortedOrders.length,
+                separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.sp3),
+                itemBuilder: (context, index) {
+                  final order = sortedOrders[index];
+                  return _AvailableOrderCard(
+                    key: Key('courier-available-${order.id}'),
+                    order: order,
+                    onAccept: () => _handleAcceptOrder(context, ref, order),
+                  );
+                },
               );
             },
           );
@@ -127,18 +133,50 @@ class _Stage1AvailableListPageState extends ConsumerState<Stage1AvailableListPag
     );
   }
 
-  List<Order> _sortByRTAsync(List<Order> orders) {
-    // For synchronous rendering, use cached/fallback data
-    // TODO: Pre-fetch distance data or use FutureBuilder for async sorting
+  /// Fetch real ETA data and sort by R/T
+  /// [REQ-COU-FLOW-004] Enable real OSRM distance data
+  /// Strategy: Fetch ETAs for all orders, use cache, graceful fallback
+  Future<List<Order>> _sortByRTWithRealETA(List<Order> orders) async {
+    if (orders.isEmpty) return orders;
 
-    // Attempt to use real distance data (will fallback if DistanceService returns null)
+    final distanceService = ref.read(distanceServiceProvider);
     final courierToMerchantEtas = <String, int?>{};
     final merchantToCustomerEtas = <String, int?>{};
 
-    // Note: Async queries would require FutureBuilder wrapping
-    // For now, RTCalculator will use fallbacks (5min default)
-    // Once h3_distance_matrix table exists, we can pre-fetch here
+    // Fetch ETAs for each order (with cache)
+    for (final order in orders) {
+      if (order.h3Merchant == null || order.h3Customer == null) continue;
 
+      // Courier → Merchant
+      if (_courierH3 != null) {
+        final cacheKey = '${_courierH3!}->${order.h3Merchant!}';
+        if (_etaCache.containsKey(cacheKey)) {
+          courierToMerchantEtas[order.merchantId] = _etaCache[cacheKey];
+        } else {
+          final eta = await distanceService.getCourierToMerchantEta(
+            courierH3: _courierH3!,
+            merchantH3: order.h3Merchant!,
+          );
+          _etaCache[cacheKey] = eta;
+          courierToMerchantEtas[order.merchantId] = eta;
+        }
+      }
+
+      // Merchant → Customer
+      final cacheKey2 = '${order.h3Merchant!}->${order.h3Customer!}';
+      if (_etaCache.containsKey(cacheKey2)) {
+        merchantToCustomerEtas[order.id] = _etaCache[cacheKey2];
+      } else {
+        final eta = await distanceService.getMerchantToCustomerEta(
+          merchantH3: order.h3Merchant!,
+          customerH3: order.h3Customer!,
+        );
+        _etaCache[cacheKey2] = eta;
+        merchantToCustomerEtas[order.id] = eta;
+      }
+    }
+
+    // Sort with real ETAs (will use fallback if null)
     return RTCalculator.sortByRT(
       orders: orders,
       courierToMerchantEtas: courierToMerchantEtas,

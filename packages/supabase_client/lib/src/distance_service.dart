@@ -12,42 +12,49 @@ class DistanceService {
   /// Get courier to merchant ETA in minutes
   /// Returns null if data not available (use fallback)
   /// [courier_app_whitepaper.md Section 4.2]
+  /// [REQ-COU-FLOW-004] Enable real OSRM distance data
   Future<int?> getCourierToMerchantEta({
     required String courierH3,
     required String merchantH3,
   }) async {
     try {
-      // TODO: Backend table 'h3_distance_matrix' not yet available
-      // Expected schema: (from_h3, to_h3, distance_km, time_minutes)
-      // For now, return null to trigger fallback
-      return null;
+      // Attempt to query h3_distance_matrix table
+      // Expected schema: (from_h3 text, to_h3 text, time_minutes int, distance_km real)
+      // Index: (from_h3, to_h3) unique
+      final response = await _client
+          .from('h3_distance_matrix')
+          .select('time_minutes')
+          .eq('from_h3', courierH3)
+          .eq('to_h3', merchantH3)
+          .maybeSingle();
 
-      // Future implementation:
-      // final response = await _client
-      //     .from('h3_distance_matrix')
-      //     .select('time_minutes')
-      //     .eq('from_h3', courierH3)
-      //     .eq('to_h3', merchantH3)
-      //     .maybeSingle();
-      //
-      // return response?['time_minutes'] as int?;
+      return response?['time_minutes'] as int?;
     } catch (e) {
+      // Table doesn't exist or query failed
+      // Return null to trigger fallback (5min default in RTCalculator)
       return null;
     }
   }
 
   /// Get merchant to customer ETA in minutes
   /// Returns null if data not available (use fallback)
+  /// [REQ-COU-FLOW-004] Enable real OSRM distance data
   Future<int?> getMerchantToCustomerEta({
     required String merchantH3,
     required String customerH3,
   }) async {
     try {
-      // TODO: Backend table not yet available
-      return null;
+      final response = await _client
+          .from('h3_distance_matrix')
+          .select('time_minutes')
+          .eq('from_h3', merchantH3)
+          .eq('to_h3', customerH3)
+          .maybeSingle();
 
-      // Future implementation: same as above
+      return response?['time_minutes'] as int?;
     } catch (e) {
+      // Table doesn't exist or query failed
+      // Return null to trigger fallback (5min default in RTCalculator)
       return null;
     }
   }

@@ -6,7 +6,7 @@ import 'dart:math' as math;
 class HeatMath {
   /// Compute raw heat score S
   /// S = waitingOrders / (activeCouriers + 1)
-  /// 
+  ///
   /// [courier_app_whitepaper.md Section 4.1]
   static double computeHeatScore({
     required int waitingOrders,
@@ -17,7 +17,7 @@ class HeatMath {
 
   /// Normalize value using P10/P90 percentiles
   /// x = clamp((value - p10) / (p90 - p10), 0, 1)
-  /// 
+  ///
   /// Handles edge cases:
   /// - If p90 == p10, returns 0.5
   /// - Clamps result to [0, 1]
@@ -27,14 +27,14 @@ class HeatMath {
     required double p90,
   }) {
     if (p90 == p10) return 0.5;
-    
+
     final normalized = (value - p10) / (p90 - p10);
     return normalized.clamp(0.0, 1.0);
   }
 
   /// Apply gamma curve for better visual distribution
   /// x' = x^(1/gamma)
-  /// 
+  ///
   /// Common gamma values: 1.2 - 1.6 (default 1.4)
   /// Higher gamma = more contrast in mid-range
   static double applyGamma(double x, {double gamma = 1.4}) {
@@ -44,7 +44,7 @@ class HeatMath {
 
   /// Exponential moving average for temporal smoothing
   /// H_t = α * x'_t + (1-α) * H_{t-1}
-  /// 
+  ///
   /// Typical alpha: 0.2 (half-life ~2-3 minutes with 30s updates)
   static double ema({
     required double previous,
@@ -64,15 +64,15 @@ class HeatMath {
     if (values.length == 1) return (values.first, values.first);
 
     final sorted = List<double>.from(values)..sort();
-    
+
     final p10Index = (sorted.length * 0.1).floor();
     final p90Index = (sorted.length * 0.9).floor();
-    
+
     return (sorted[p10Index], sorted[p90Index]);
   }
 
   /// Full heat pipeline: S → normalize → gamma → EMA
-  /// 
+  ///
   /// Returns final heat value in [0, 1] ready for color mapping
   static double computeFinalHeat({
     required int waitingOrders,
