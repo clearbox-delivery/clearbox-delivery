@@ -1,0 +1,67 @@
+feat(phase4): courier R/T sorting + optional H3 filtering [REQ-COU-FLOW-002/TC-COU-*]
+
+- R/T calculator complete with fallback strategy:
+  - packages/core_data/lib/src/utils/rt_calculator.dart
+  - Formula: R = deliveryPrice, T = max(courierToMerchantEta, prepTime) + merchantToCustomerEta
+  - Fallbacks: courierToMerchantEta missing → 5min, merchantToCustomerEta missing → 5min, prepTime missing → 15min
+  - Minimum T = 5min to avoid division noise
+  - Sorting: R/T desc → deliveryPrice desc → createdAt asc (tie-breaker)
+
+- DistanceService skeleton:
+  - packages/supabase_client/lib/src/distance_service.dart
+  - Methods: getCourierToMerchantEta/getMerchantToCustomerEta (return null, backend table not available)
+  - Expected table: h3_distance_matrix (from_h3, to_h3, distance_km, time_minutes)
+  - Documented: OSRM pre-calculation strategy, all Taiwan H3 res=10 k=40 pairs
+
+- Stage1 updated with R/T sorting:
+  - apps/courier_app/lib/features/orders/flow/stage1_available_list_page.dart
+  - Uses RTCalculator.sortByRT() with empty ETA maps (triggers fallbacks)
+  - Actual effect: Sorts mainly by deliveryPrice (R差) and prepTime (T差) due to fallback
+  - Formula structure complete, will auto-enable real distances once OSRM table ready
+
+- Optional H3 filtering support:
+  - watchAvailableOrders(h3Cell: null) → no filtering (show all WAITING_COURIER)
+  - Courier H3 cell retrieval: Not implemented (GPS service pending)
+  - Documented: Future integration with GPS → H3 cell (res=10) → k=40 range filter
+
+- R/T calculator unit tests (7 tests, all pass):
+  - packages/core_data/test/rt_calculator_test.dart
+  - TC-COU-RT-001: Basic R/T calculation
+  - TC-COU-RT-002: Uses larger prepTime
+  - TC-COU-RT-003: Fallback when ETAs missing
+  - TC-COU-RT-004: Fallback when prepTime missing (15min)
+  - TC-COU-RT-005: Minimum T = 5min
+  - TC-COU-RT-006: R/T descending sort
+  - TC-COU-RT-007: Tie-breaker (deliveryPrice → createdAt)
+
+- Updated docs/PHASE4_NOTES.md: Section 4.2 Stage1
+  - R/T sorting implementation with fallback strategy
+  - DistanceService placeholder and expected table structure
+  - H3 filtering current status (not active, documented)
+  - OSRM integration roadmap
+  - Testing coverage
+
+- Design Tokens compliance maintained
+- List stability with Key maintained
+- No docs/archive/ modifications
+
+Acceptance:
+- [x] Stage1 list sorted by R/T descending (with fallback strategy, no crash)
+- [x] Optional H3 filtering (h3Cell: null for now, documented)
+- [x] UI uses Design Tokens, list Key stable
+- [x] R/T sorting unit tests pass (7/7)
+- [x] docs/PHASE4_NOTES.md updated with R/T sorting and H3 filtering details
+- [x] No docs/archive/ modifications
+
+Known gaps (documented in PHASE4_NOTES.md):
+- h3_distance_matrix table not created (OSRM data pending)
+- GPS service integration for courier H3 cell
+- k=40 range filter logic
+- Distance data caching strategy
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+Tests:
+cd packages/core_data && dart test test/rt_calculator_test.dart
+

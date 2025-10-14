@@ -5,10 +5,10 @@ import 'package:core_data/core_data.dart';
 /// [REQ-COU-FLOW-002] Calculate R/T = deliveryPrice / totalTimeMinutes
 class RTCalculator {
   /// Calculate R/T score for an order
-  /// 
+  ///
   /// R = deliveryPriceUserSet
   /// T = max(courierToMerchantEta, prepTimeMinutes) + merchantToCustomerEta
-  /// 
+  ///
   /// Fallbacks:
   /// - courierToMerchantEta missing → 5 min
   /// - merchantToCustomerEta missing → 5 min
@@ -20,18 +20,18 @@ class RTCalculator {
     int? merchantToCustomerEta,
   }) {
     final R = order.deliveryPriceUserSet;
-    
+
     final courierToMerchant = courierToMerchantEta ?? 5;
     final prepTime = order.prepTimeMinutes ?? 15;
     final merchantToCustomer = merchantToCustomerEta ?? 5;
-    
+
     // T = max(courierToMerchant, prepTime) + merchantToCustomer
     final maxWait = courierToMerchant > prepTime ? courierToMerchant : prepTime;
     var T = maxWait + merchantToCustomer;
-    
+
     // Minimum 5 minutes to avoid noise
     if (T < 5) T = 5;
-    
+
     return R / T;
   }
 

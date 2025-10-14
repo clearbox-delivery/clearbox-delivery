@@ -29,7 +29,7 @@ class DistanceService {
       //     .eq('from_h3', courierH3)
       //     .eq('to_h3', merchantH3)
       //     .maybeSingle();
-      // 
+      //
       // return response?['time_minutes'] as int?;
     } catch (e) {
       return null;

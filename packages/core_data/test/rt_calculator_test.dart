@@ -176,7 +176,7 @@ void main() {
 
     test('TC-COU-RT-007: Tie-breaker by deliveryPrice then createdAt', () {
       final earlier = now.subtract(const Duration(minutes: 5));
-      
+
       final orders = [
         Order(
           id: 'o1',

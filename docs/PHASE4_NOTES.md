@@ -47,12 +47,17 @@
 
 ##### H3 範圍過濾
 - **當前狀態**：
-  - `watchAvailableOrders(h3Cell: null)` → 不過濾（顯示所有 WAITING_COURIER）
-  - 外送員 H3 cell 取得：未實作（GPS service 待整合）
+  - 外送員 H3 cell 取得：已整合 `GPSService.getCurrentPosition()` → `H3Service.toH3Res10()`
+  - Web/Dev fallback：Taipei 101 (25.0340, 121.5645) → H3 cell `25034:121564`
+  - 客端 k=40 範圍過濾：使用 `H3Service.isWithinDistance(courierH3, merchantH3, 40)`
+  - 若 GPS 無法取得：`courierH3 = null`，顯示所有訂單（不過濾）
+  - EmptyState 文案：依 `courierH3` 是否存在顯示不同描述
+- **實際效果**：
+  - Web dev 模式：固定以 Taipei 101 為中心 k=40 範圍過濾
+  - 產線/真機：GPS 取得實際位置，動態 k=40 範圍
 - **未來改進**：
-  - 整合 GPS service 取得當前位置 → H3 cell (res=10)
-  - 傳入 `watchAvailableOrders(h3Cell: courierH3)`
-  - 後端或客端 k=40 範圍過濾
+  - 後端 RPC/View 預過濾（減少傳輸量）
+  - 即時 GPS 更新（移動時重新計算範圍）
 
 ##### OSRM 距離資料整合
 - **期望表結構**：`h3_distance_matrix`
@@ -231,12 +236,14 @@
 
 - [x] Phase 4.1：Login 動畫
 - [x] Phase 4.2：接單流程（Stage 1–4）骨架
-- [ ] Phase 4.2+：OSRM 距離資料與 R/T 排序
-- [ ] Phase 4.3：熱度地圖完整實作
-- [ ] Phase 4.4：KYC 流程（證件拍攝與上傳）
-- [ ] Phase 4.5：照片驗證與取餐碼
-- [ ] Phase 4.6：History/Account 頁面
-- [ ] Phase 4.7：RPC 替代 REST 與整合測試
+- [x] Phase 4.2+：R/T 排序邏輯與 fallback
+- [x] Phase 4.3：GPS→H3 與 k=40 範圍過濾（客端）
+- [ ] Phase 4.3+：OSRM 表建立與真實 ETA 整合
+- [ ] Phase 4.4：熱度地圖完整實作
+- [ ] Phase 4.5：KYC 流程（證件拍攝與上傳）
+- [ ] Phase 4.6：照片驗證與取餐碼
+- [ ] Phase 4.7：History/Account 頁面
+- [ ] Phase 4.8：RPC 替代 REST 與整合測試
 
 ---
 
