@@ -185,7 +185,7 @@ Status: APPROVED (policies aligned; no login-time device blocking, emulator-only
 
 ## Phase 5 – Cross-domain features (Wallet, Notifications, Support)
 
-**Status**: Phase 5.1-5.3 完成（詳見 `docs/PHASE5_NOTES.md`）
+**Status**: Phase 5.1-5.4 完成（詳見 `docs/PHASE5_NOTES.md`）
 
 5.1 錢包/結算（Courier Payouts）骨架 ✅
 - Models: `Payout`, `WalletTransaction` (Freezed)
@@ -201,11 +201,19 @@ Status: APPROVED (policies aligned; no login-time device blocking, emulator-only
 - AC: UI 可運行並顯示 mock 資料；後端表不存在時優雅 fallback；單元測試通過（8 測試）。
 
 5.3 測試與可靠性強化 ✅
-- Service tests: WalletService (5 tests), NotificationCenterService (6 tests)
+- Service tests: WalletService (5 tests), NotificationCenterService (6 tests) 
 - Cache behavior: hit/miss, clear, key strategy
 - Fallback logic: mock data consistency when backend unavailable
 - Data source strategy: REST → mock → cache (documented in PHASE5_NOTES.md)
 - AC: 90 core_data tests pass; 11 service tests added; cache/fallback behavior verified.
+
+5.4 後端 Migrations 準備 ✅
+- SQL files: wallet_tables_and_rpcs.sql, notifications_table_and_rpcs.sql, regenerate_pickup_code.sql
+- Tables: payouts, transactions, notifications (with indexes & RLS)
+- RPCs: get_courier_payouts, get_courier_transactions, get_notifications, mark_notifications_read, mark_all_read, regenerate_pickup_code
+- Service: OrderService.regeneratePickupCode added with fallback
+- Tests: 4 regenerate pickup code tests added (94 total core_data tests pass)
+- AC: Migration files complete; execution steps documented; frontend ready to use RPCs when available.
 
 ---
 

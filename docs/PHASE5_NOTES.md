@@ -230,19 +230,93 @@
 
 ---
 
+---
+
+### 5.4 後端 Migrations 準備（已完成 SQL 檔案，待執行）
+
+#### Wallet Tables & RPCs
+**Migration**：`infra/supabase/migrations/20250115000006_wallet_tables_and_rpcs.sql`
+
+**Tables**：
+- `payouts`：id, courier_id, amount, period_start, period_end, status, order_count, paid_at, payment_method, notes, created_at, updated_at
+  - 索引：(courier_id, period_end DESC), (status, created_at DESC)
+  - RLS：Courier SELECT own; Admin SELECT all, INSERT, UPDATE
+- `transactions`：id, courier_id, order_id (nullable), amount, type, description, created_at
+  - 索引：(courier_id, created_at DESC), (order_id)
+  - RLS：Courier SELECT own; System/Admin INSERT
+
+**RPCs**：
+- `get_courier_payouts(p_courier_id) RETURNS SETOF payouts`：僅 courier 或 admin 可查，limit 100，按 period_end DESC
+- `get_courier_transactions(p_courier_id) RETURNS SETOF transactions`：僅 courier 或 admin 可查，limit 100，按 created_at DESC
+
+**執行步驟**（由管理員在本機執行）：
+```bash
+# 1. 啟動 Supabase Local（或連線至遠端）
+supabase start
+
+# 2. 執行 migration
+supabase db reset  # 或 supabase migration up
+
+# 3. 驗證表與 RPC
+psql -h localhost -p 54322 -U postgres -d postgres
+\dt payouts transactions
+\df get_courier_payouts get_courier_transactions
+
+# 4. 測試 RPC（手動插入測試資料後）
+SELECT * FROM get_courier_payouts('<courier_uuid>');
+```
+
+#### Notifications Table & RPCs
+**Migration**：`infra/supabase/migrations/20250115000007_notifications_table_and_rpcs.sql`
+
+**Table**：
+- `notifications`：id, user_id, audience, type, title, message, data (jsonb), created_at, read_at, updated_at
+  - 索引：(user_id, created_at DESC), (audience, created_at DESC), (read_at WHERE IS NULL)
+  - RLS：User SELECT own; System/Admin INSERT; User UPDATE own read_at
+
+**RPCs**：
+- `get_notifications(p_user_id, p_unread_only default false) RETURNS SETOF notifications`
+- `mark_notifications_read(p_ids uuid[]) RETURNS INT`
+- `mark_all_read(p_user_id) RETURNS INT`
+
+**執行步驟**：同上（執行 migration 後驗證）
+
+#### Regenerate Pickup Code RPC
+**Migration**：`infra/supabase/migrations/20250115000005_regenerate_pickup_code.sql`
+
+**RPC**：
+- `regenerate_pickup_code(p_order_id) RETURNS TEXT`
+- 僅 merchant 擁有該訂單且狀態為 PENDING_COURIER/WAITING_PICKUP 時可執行
+- 生成新 6 位碼、更新 orders.pickup_code、記錄 order_events
+- GRANT EXECUTE TO authenticated
+
+**服務層**：
+- `OrderService.regeneratePickupCode(orderId) -> String?`
+- Fallback：RPC 不存在時返回 null
+
+**測試**：
+- `packages/core_data/test/regenerate_pickup_code_test.dart`（4 測試）：
+  - TC-COU-VERIF-011：生成碼為 6 位數字
+  - TC-COU-VERIF-012：多次生成唯一性
+  - TC-COU-VERIF-013：Fallback 返回 null
+  - TC-COU-VERIF-014：成功返回 6 位字串
+
+---
+
 ## 後續待辦
 
 - [x] Phase 5.1：錢包/結算骨架（Payout/Transaction 模型 + WalletService + WalletPage + mock fallback）
 - [x] Phase 5.2：通知中心骨架（NotificationItem 模型 + NotificationCenterService + NotificationsPage + mock fallback）
 - [x] Phase 5.3：測試與可靠性強化（服務層測試補強 + 快取/fallback 行為驗證）
-- [ ] Phase 5.1+：後端建表（payouts + transactions + RLS）
-- [ ] Phase 5.2+：後端建表（notifications + RLS + 自動發送機制）
+- [x] Phase 5.4：後端 Migrations 準備（SQL 檔案完成，待管理員執行）
+- [ ] Phase 5.1+：執行 Wallet migrations（payouts/transactions + RLS + RPCs）
+- [ ] Phase 5.2+：執行 Notifications migrations（notifications + RLS + RPCs）
 - [ ] Phase 5.1++：結算自動化（排程任務 + 計算邏輯）
 - [ ] Phase 5.2++：Realtime 推播整合（FCM + 訂閱）
-- [ ] Phase 5.4：客服/幫助中心（FAQ + 聯絡表單）
+- [ ] Phase 5.5：客服/幫助中心（FAQ + 聯絡表單）
 
 ---
 
-**版本**：Phase 5.3 測試與可靠性強化完成
+**版本**：Phase 5.4 後端 Migrations 準備完成  
 **更新日期**：2025-01-15
 

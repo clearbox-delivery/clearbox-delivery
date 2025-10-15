@@ -347,6 +347,22 @@ class AcceptOrderResult {
       return code.length == 6;
     }
   }
+
+  /// Regenerate pickup code (merchant only)
+  /// [REQ-COU-VERIF-004] Merchant can regenerate pickup code
+  Future<String?> regeneratePickupCode({required String orderId}) async {
+    try {
+      final newCode = await _client.rpc('regenerate_pickup_code', params: {
+        'p_order_id': orderId,
+      }) as String;
+
+      return newCode;
+    } catch (e) {
+      // Fallback: Return null if RPC doesn't exist or fails
+      // Merchant can retry or contact support
+      return null;
+    }
+  }
 }
 
 /// Order service provider
