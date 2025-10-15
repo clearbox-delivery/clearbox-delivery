@@ -1,127 +1,170 @@
-# Notification API Contract
+# Notification Center API Documentation
 
-Purpose: Define push notification topics, payloads, and delivery mechanisms for the three ClearBox apps. Used by frontend to listen and display realtime updates.
+## Overview
+This document defines the notification payload structure, types, and behavior for the ClearBox notification system.
 
-## Delivery mechanism
-- **Dev/Web**: Supabase Realtime channels with broadcast messages (no-op in local web runs).
-- **Prod/Mobile**: Firebase Cloud Messaging (FCM) with topic subscriptions.
-- All apps must handle graceful degradation if no connection.
+## Table Schema (Backend Suggestion)
 
-## Notification types and payloads
+```sql
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  audience TEXT NOT NULL CHECK (audience IN ('courier', 'merchant', 'customer')),
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  data JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  read_at TIMESTAMPTZ
+);
 
-### 1. New Order (`topic:merchant:new_order`)
-**Recipient**: Merchant app
-**Trigger**: Customer creates order
-**Payload**:
-```json
-{
-  "type": "new_order",
-  "order_id": "uuid",
-  "customer_nickname": "string",
-  "delivery_price": 100.0,
-  "items_summary": "便當 x2, 飲料 x1",
-  "created_at": "ISO8601"
-}
+CREATE INDEX idx_notifications_user_created ON notifications (user_id, created_at DESC);
+CREATE INDEX idx_notifications_audience_created ON notifications (audience, created_at DESC);
+CREATE INDEX idx_notifications_read_at ON notifications (read_at) WHERE read_at IS NULL;
 ```
-**Action**: Show toast; refresh CurrentOrders pending tab; optional sound/vibration.
 
-### 2. Courier Accepted (`topic:merchant:courier_accepted`, `topic:customer:courier_accepted`)
-**Recipients**: Merchant + Customer apps
-**Trigger**: Courier accepts order
-**Payload**:
-```json
-{
-  "type": "courier_accepted",
-  "order_id": "uuid",
-  "courier_name": "string",
-  "courier_rating": 4.85,
-  "eta_minutes": 15
-}
+### RLS Policies
+```sql
+-- Users can only read their own notifications
+CREATE POLICY "Users can read own notifications"
+  ON notifications FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- System/Admin can insert notifications
+CREATE POLICY "System can insert notifications"
+  ON notifications FOR INSERT
+  WITH CHECK (auth.role() = 'service_role' OR auth.jwt() ->> 'role' = 'admin');
+
+-- Users can update their own read_at
+CREATE POLICY "Users can mark own as read"
+  ON notifications FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 ```
-**Action**: Merchant: move order to "備餐中" tab, show toast "已有人接單，請開始備餐". Customer: show "外送員已接單" toast.
 
-### 3. Prep Ready (`topic:courier:prep_ready`)
-**Recipient**: Courier app
-**Trigger**: Merchant marks "我備好囉"
-**Payload**:
-```json
-{
-  "type": "prep_ready",
-  "order_id": "uuid",
-  "merchant_name": "string",
-  "pickup_code": "ABCD12"
-}
+## Notification Types
+
+### Order-related Notifications
+| Type | Title | Message Example | Audience | Data Fields |
+|------|-------|----------------|----------|-------------|
+| `order_new` | 新訂單 | 您有一筆新訂單，預估收益 NT\$55 | courier | `orderId`, `amount` |
+| `order_accepted` | 訂單已接單 | 外送員已接單，預計 15 分鐘後取餐 | customer, merchant | `orderId`, `courierId` |
+| `order_prep_ready` | 餐點已備妥 | 訂單 #123 餐點已備妥，請前往取餐 | courier | `orderId`, `merchantId` |
+| `order_picked_up` | 訂單已取餐 | 外送員已取餐，預計 10 分鐘送達 | customer | `orderId`, `courierId`, `eta` |
+| `order_delivered` | 訂單已送達 | 訂單 #456 已成功送達 | courier, merchant, customer | `orderId`, `deliveredAt` |
+| `order_cancelled` | 訂單已取消 | 訂單 #789 已取消：缺貨 | courier, merchant, customer | `orderId`, `reason` |
+| `order_arriving` | 外送員即將抵達 | 外送員距離您不到 2 分鐘 | customer | `orderId`, `courierId`, `eta` |
+
+### System Notifications
+| Type | Title | Message Example | Audience | Data Fields |
+|------|-------|----------------|----------|-------------|
+| `system_announcement` | 系統公告 | 系統將於週日凌晨 2:00-4:00 進行維護 | all | `maintenanceStart`, `maintenanceEnd` |
+| `payout_processed` | 結算已處理 | 您的週結算 NT\$1,250 已轉入帳戶 | courier | `payoutId`, `amount`, `period` |
+| `kyc_status_update` | KYC 狀態更新 | 您的 KYC 文件已審核通過 | courier | `status` (`approved`/`rejected`), `reason` |
+
+## RPCs (Backend Suggestion)
+
+### get_notifications
+```sql
+CREATE OR REPLACE FUNCTION get_notifications(
+  p_user_id UUID,
+  p_unread_only BOOLEAN DEFAULT FALSE
+)
+RETURNS SETOF notifications
+LANGUAGE plpgsql
+STABLE
+AS $$
+BEGIN
+  IF p_unread_only THEN
+    RETURN QUERY
+    SELECT * FROM notifications
+    WHERE user_id = p_user_id AND read_at IS NULL
+    ORDER BY created_at DESC
+    LIMIT 100;
+  ELSE
+    RETURN QUERY
+    SELECT * FROM notifications
+    WHERE user_id = p_user_id
+    ORDER BY created_at DESC
+    LIMIT 100;
+  END IF;
+END;
+$$;
 ```
-**Action**: Show toast "可到店取餐".
 
-### 4. Picked Up (`topic:merchant:picked_up`, `topic:customer:picked_up`)
-**Recipients**: Merchant + Customer apps
-**Trigger**: Courier completes pickup
-**Payload**:
-```json
-{
-  "type": "picked_up",
-  "order_id": "uuid",
-  "pickup_time": "ISO8601"
-}
+### mark_notifications_read
+```sql
+CREATE OR REPLACE FUNCTION mark_notifications_read(p_ids UUID[])
+RETURNS INT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_count INT;
+BEGIN
+  UPDATE notifications
+  SET read_at = NOW()
+  WHERE id = ANY(p_ids) AND read_at IS NULL;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN v_count;
+END;
+$$;
 ```
-**Action**: Merchant: move to "已取餐" tab. Customer: show "外送員已取餐，配送中".
 
-### 5. Arriving in 2 minutes (`topic:customer:arriving_soon`)
-**Recipient**: Customer app
-**Trigger**: Courier presses "我將於兩分鐘後抵達"
-**Payload**:
-```json
-{
-  "type": "arriving_soon",
-  "order_id": "uuid",
-  "courier_name": "string"
-}
+### mark_all_read
+```sql
+CREATE OR REPLACE FUNCTION mark_all_read(p_user_id UUID)
+RETURNS INT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_count INT;
+BEGIN
+  UPDATE notifications
+  SET read_at = NOW()
+  WHERE user_id = p_user_id AND read_at IS NULL;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN v_count;
+END;
+$$;
 ```
-**Action**: Show toast + optional sound.
 
-### 6. Delivered (`topic:all:delivered`)
-**Recipients**: All three apps
-**Trigger**: Courier completes delivery
-**Payload**:
-```json
-{
-  "type": "delivered",
-  "order_id": "uuid",
-  "delivered_at": "ISO8601"
-}
+## Client-side Usage
+
+### List Notifications
+```dart
+final service = ref.read(notificationCenterServiceProvider);
+final notifications = await service.listNotifications(
+  userId: courierId,
+  unreadOnly: false,
+);
 ```
-**Action**: Move to history; show "訂單已完成" toast.
 
-### 7. Cancelled (`topic:all:cancelled`)
-**Recipients**: All relevant parties
-**Trigger**: Any party cancels order
-**Payload**:
-```json
-{
-  "type": "cancelled",
-  "order_id": "uuid",
-  "cancelled_by": "CUSTOMER|MERCHANT|COURIER|SYSTEM",
-  "reason": "string",
-  "cancelled_at": "ISO8601"
-}
+### Mark as Read
+```dart
+await service.markAsRead(['notif-id-1', 'notif-id-2']);
 ```
-**Action**: Move to history with status; show cancellation reason.
 
-## Implementation notes
-- All apps subscribe to relevant topics on login; unsubscribe on logout.
-- Dev mode: simulated notifications via test buttons or manual trigger.
-- Prod mode: FCM tokens stored in `user_devices` table; backend sends via FCM Admin SDK.
-- Toast display uses `CBToast.show()` from core_ui.
-- Deep links: `clearbox://order/{order_id}` for detail navigation.
+### Mark All as Read
+```dart
+await service.markAllAsRead(courierId);
+```
 
-## Channel naming convention (Supabase Realtime)
-- `notifications:merchant:{merchant_id}`
-- `notifications:customer:{customer_id}`
-- `notifications:courier:{courier_id}`
+## Mock Data (Fallback)
+When the backend table doesn't exist, the service returns 5 mock notifications:
+- 2 unread: `order_new`, `payout_processed`
+- 3 read: `order_delivered`, `kyc_status_update`, `system_announcement`
 
-## Security
-- Backend validates sender authority before publishing.
-- Clients validate message schema before processing.
-- No sensitive data (addresses, phone) in push payload; fetch on tap.
+## Future Enhancements
+1. **Realtime Push**: Integrate Supabase Realtime or FCM for instant notifications
+2. **Auto-generation**: Trigger notifications on order status changes (via RPC/DB trigger)
+3. **Deep Linking**: Navigate to specific pages based on notification `data` field
+4. **Filtering**: Filter by type (order/system/payout)
+5. **Pagination**: Load more than 100 notifications
+6. **Badge Count**: Display unread count on app icon/tab bar
 
+---
+
+**Version**: Phase 5.2 Notification Center Skeleton  
+**Last Updated**: 2025-01-15

@@ -1,0 +1,90 @@
+feat(phase4+5): pickup code autogen + wallet skeleton [REQ-COU-VERIF-003/REQ-COU-WALLET-001/TC-COU-WALLET-*]
+
+Part A: Phase 4.7++ - Pickup Code Auto-generation
+- merchant_confirm RPC integration:
+  - infra/supabase/migrations/20240104000000_merchant_confirm_rpcs.sql
+  - Added: UPDATE orders SET pickup_code = LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0') WHERE id = p_order_id AND pickup_code IS NULL
+  - Generates 6-digit code only on first confirm (idempotent)
+  - Collision risk: ~0.1% (100万 combinations, <1000 concurrent orders)
+- Updated docs/PHASE4_NOTES.md: Section 4.7+
+  - Auto-generation timing and rules
+  - SQL logic and collision analysis
+  - Phase 4.7++ marked complete
+
+Part B: Phase 5.1 - Wallet/Payout Skeleton
+- Models (Freezed with JSON serialization):
+  - Payout: id, courierId, amount, periodStart, periodEnd, status, orderCount, paidAt, paymentMethod, notes, createdAt
+  - WalletTransaction: id, courierId, orderId (nullable), amount, type, description, createdAt
+  - PayoutStatus enum: pending/processing/paid/failed with Chinese displayName
+  - TransactionType enum: earnings/bonus/penalty/payout with Chinese displayName
+
+- WalletService (with mock fallback):
+  - packages/supabase_client/lib/src/wallet_service.dart
+  - getPayouts(courierId): Queries payouts table → fallback to mock (2 payouts)
+  - getTransactions(courierId): Queries transactions table → fallback to mock (3 transactions)
+  - LRU cache: _payoutCache, _transactionCache (Map<courierId, List>)
+  - clearCache(courierId): Invalidate cache after updates
+  - Graceful degradation: try-catch returns mock if table doesn't exist
+
+- WalletPage UI (Full Design Tokens):
+  - apps/courier_app/lib/features/wallet/presentation/wallet_page.dart
+  - TabBar: "結算" (Payouts), "明細" (Transactions)
+  - Payouts Tab:
+    - Cards: period range, amount (large/bold/brand), status badge (color-coded), order count, paid date
+    - EmptyState: "暫無結算記錄" (icon + text)
+    - RefreshIndicator: pull to refresh
+    - List Key: Key('payout-${id}')
+  - Transactions Tab:
+    - Cards: type icon, title, description, timestamp, amount (+/- with success/danger color)
+    - EmptyState: "暫無交易記錄"
+    - RefreshIndicator
+    - List Key: Key('tx-${id}')
+  - Bottom nav integration (index 3, assuming 4-tab layout)
+
+- Unit Tests (7 tests, all pass):
+  - TC-COU-WALLET-001: Payout model creation
+  - TC-COU-WALLET-002: PayoutStatus enum mapping
+  - TC-COU-WALLET-003: Payout JSON serialization
+  - TC-COU-WALLET-004: WalletTransaction model creation
+  - TC-COU-WALLET-005: TransactionType enum mapping
+  - TC-COU-WALLET-006: Transaction optional orderId
+  - TC-COU-WALLET-007: Mock data fallback logic
+
+- Documentation:
+  - docs/PHASE5_NOTES.md (new): Section 5.1
+    - Models, service layer, UI details
+    - Backend schema suggestions (payouts, transactions tables)
+    - RLS policies, indexes
+    - Mock data fallback strategy
+    - Known gaps (auto-calculation, withdrawal flow, CSV export)
+  - docs/implementation_plan.md: Updated Phase 5
+    - Replaced generic "Tests, docs, CI" with "Cross-domain features"
+    - Added Phase 5.1 Wallet, 5.2 Notifications, 5.3 Tests/Docs
+  - docs/PHASE4_NOTES.md: Phase 4 summary
+    - Marked Phase 4.7++ complete (pickup code autogen)
+    - Created "Phase 4 Backlog" section (7 non-blocking items)
+    - Phase 4 conclusion: MVP Production-ready
+
+Acceptance:
+- [x] merchant_confirm auto-generates 6-digit pickup_code (first time only)
+- [x] Phase 5.1: Wallet page skeleton with tabs (payouts/transactions)
+- [x] Service layer with mock fallback (graceful degradation)
+- [x] All UI uses Design Tokens, list keys stable
+- [x] Loading/Empty/Error layouts complete
+- [x] Unit tests pass (7 wallet model tests)
+- [x] docs/PHASE5_NOTES.md created, implementation_plan.md updated
+- [x] No docs/archive/ modifications
+
+Benefits:
+- Pickup codes now auto-generated (no manual setup needed)
+- Courier wallet UI ready (displays mock until backend built)
+- Phase 4 officially complete (core MVP features done)
+- Phase 5 started (cross-domain expansion begins)
+
+Tests:
+cd packages/core_data && dart test
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
+

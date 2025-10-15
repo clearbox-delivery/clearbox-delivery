@@ -82,16 +82,111 @@
 
 ---
 
+---
+
+### 5.2 通知中心（Notification Center）骨架
+
+#### 功能實作（已完成）
+- **NotificationItem 模型**（`packages/core_data/lib/src/models/notification_item.dart`）：
+  - 欄位：id, userId, audience, type, title, message, data（Map<String,dynamic>?）, createdAt, readAt
+  - NotificationType enum：orderNew（新訂單）、orderAccepted（已接單）、orderPrepReady（餐點已備妥）、orderPickedUp（已取餐）、orderDelivered（已送達）、orderCancelled（已取消）、orderArriving（即將抵達）、systemAnnouncement（系統公告）、payoutProcessed（結算已處理）、kycStatusUpdate（KYC 狀態更新）
+  - Freezed 模型，完整 JSON 序列化（含 data 欄位）
+
+- **NotificationCenterService**（`packages/supabase_client/lib/src/notification_center_service.dart`）：
+  - `listNotifications(userId, unreadOnly) -> List<NotificationItem>`：查詢 `notifications` 表（limit 100，按 createdAt desc），若表不存在回 mock（5 筆：2 未讀 + 3 已讀）
+  - `markAsRead(List<String> ids) -> int`：批量標記已讀（更新 read_at timestamp）
+  - `markAllAsRead(String userId) -> int`：標記該用戶所有未讀為已讀
+  - `clearCache()`：清除快取
+  - LRU 快取：`_cache`（Map<cacheKey, List>，key = `$userId-$unreadOnly`）
+  - Fallback 策略：try-catch 捕捉表不存在異常，返回 mock 資料
+
+- **NotificationsPage**（`apps/courier_app/lib/features/notifications/presentation/notifications_page.dart`）：
+  - TabBar：「未讀 (N)」/「全部」（TabController）
+  - 未讀 Tab：
+    - 列表卡片：type icon、標題、內容摘要（max 2 lines）、時間、未讀紅點
+    - 背景高亮（brand.withOpacity(0.05)）
+    - Dismissible：右滑標記已讀（綠色 done icon）
+    - 點擊：標記已讀
+    - 長按：彈窗確認標記已讀
+    - EmptyState：「沒有未讀通知」（icon + 文字）
+    - RefreshIndicator：下拉刷新
+  - 全部 Tab：
+    - 同上，但不可右滑（DismissDirection.none）
+    - EmptyState：「暫無通知記錄」
+  - AppBar Actions：「全部標記為已讀」按鈕（僅當有未讀時顯示）
+  - UI 全用 Design Tokens；列表 Key 穩定（`Key('notif-${id}')`）
+  - Icon/Color 映射：
+    - orderNew → delivery_dining / brand
+    - orderAccepted, orderDelivered, payoutProcessed, kycStatusUpdate → check/verified/wallet/badge / success
+    - orderCancelled → cancel / danger
+    - orderArriving → near_me / warning
+    - 其他 → default / textSecondary
+
+- **路由整合**（`apps/courier_app/lib/router/app_router.dart`）：
+  - 新增 `/notifications` 路由
+  - 目前透過 Account 頁面或直接導航存取（最小差異，無底部導航位）
+
+#### 資料來源（當前狀態）
+- **後端表**（暫未建立）：
+  - 建議 `notifications` 表：
+    - 欄位：id (uuid), user_id (uuid), audience (text: 'courier'/'merchant'/'customer'), type (text/enum), title (text), message (text), data (jsonb), created_at (timestamptz default now()), read_at (timestamptz nullable)
+    - 索引：(user_id, created_at desc), (audience, created_at), (read_at nulls first)
+    - RLS：User SELECT own (WHERE user_id = auth.uid()); System/Admin INSERT
+  - 建議 RPC：
+    - `get_notifications(p_user_id uuid, p_unread_only boolean default false) RETURNS SETOF notifications`
+    - `mark_notifications_read(p_ids uuid[]) RETURNS int`
+    - `mark_all_read(p_user_id uuid) RETURNS int`
+- **Mock 資料**（前端 fallback）：
+  - 5 筆通知（2 未讀：order_new, payout_processed；3 已讀：order_delivered, kyc_status_update, system_announcement）
+  - 當後端表存在時，自動切換至真實資料（無需程式碼變更）
+
+#### 測試（已完成）
+- **單元測試**（`packages/core_data/test/notification_models_test.dart`，8 測試，全通過）：
+  - TC-COU-NOTIF-001：NotificationItem 模型建立
+  - TC-COU-NOTIF-002：NotificationType enum 映射與 displayName
+  - TC-COU-NOTIF-003：JSON 序列化（含 data 欄位）
+  - TC-COU-NOTIF-004：readAt timestamp
+  - TC-COU-NOTIF-005：過濾未讀通知
+  - TC-COU-NOTIF-006：按 createdAt 降序排序
+  - TC-COU-NOTIF-007：標記已讀模擬
+  - TC-COU-NOTIF-008：Mock fallback 邏輯
+
+#### 已知缺口與待辦
+- **後端建表**：
+  - `notifications` 表尚未建立（前端已備妥 fallback）
+  - 需建 migration 定義 schema、索引、RLS policies
+- **Realtime 推播整合**：
+  - 當前：僅列表查詢（pull）
+  - 未來：整合 Supabase Realtime 或 FCM，新通知即時推送
+  - 需與既有 `notifications_service.dart`（Realtime 訂閱）整合
+- **通知發送機制**：
+  - 當前：無自動發送
+  - 未來：Order 狀態變更時（accept/prep_ready/picked_up/delivered/cancelled）自動 INSERT notification（via RPC/Trigger）
+  - 結算/KYC 審核完成時自動發送通知
+- **通知分類與篩選**：
+  - 按 type 篩選（訂單/結算/系統）
+  - 按 audience 區分（courier/merchant/customer）
+- **通知詳情頁**：
+  - 點擊通知跳轉至相關頁面（例如：order_new → 訂單詳情）
+  - 使用 data 欄位路由參數
+- **底部導航整合**：
+  - 當前：無底部導航位
+  - 未來：若需要，可於 Account 頁面加入「通知中心」入口，或新增第 4/5 個 Tab
+
+---
+
 ## 後續待辦
 
 - [x] Phase 5.1：錢包/結算骨架（Payout/Transaction 模型 + WalletService + WalletPage + mock fallback）
+- [x] Phase 5.2：通知中心骨架（NotificationItem 模型 + NotificationCenterService + NotificationsPage + mock fallback）
 - [ ] Phase 5.1+：後端建表（payouts + transactions + RLS）
+- [ ] Phase 5.2+：後端建表（notifications + RLS + 自動發送機制）
 - [ ] Phase 5.1++：結算自動化（排程任務 + 計算邏輯）
-- [ ] Phase 5.2：通知中心（Notifications 模型 + 服務層 + UI）
+- [ ] Phase 5.2++：Realtime 推播整合（FCM + 訂閱）
 - [ ] Phase 5.3：客服/幫助中心（FAQ + 聯絡表單）
 
 ---
 
-**版本**：Phase 5.1 錢包/結算骨架完成  
+**版本**：Phase 5.2 通知中心骨架完成  
 **更新日期**：2025-01-15
 

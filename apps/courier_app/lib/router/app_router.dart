@@ -8,6 +8,7 @@ import 'package:courier_app/features/orders/presentation/current_orders_page.dar
 import 'package:courier_app/features/history/presentation/order_history_page.dart';
 import 'package:courier_app/features/account/presentation/account_page.dart';
 import 'package:courier_app/features/kyc/presentation/kyc_flow_page.dart';
+import 'package:courier_app/features/notifications/presentation/notifications_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(currentUserProvider);
@@ -48,6 +49,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/kyc',
         builder: (context, state) => const KYCFlowPage(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsPage(),
       ),
     ],
   );

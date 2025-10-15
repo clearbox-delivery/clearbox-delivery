@@ -185,19 +185,20 @@ Status: APPROVED (policies aligned; no login-time device blocking, emulator-only
 
 ## Phase 5 – Cross-domain features (Wallet, Notifications, Support)
 
-**Status**: Phase 5.1 錢包/結算骨架已完成（詳見 `docs/PHASE5_NOTES.md`）
+**Status**: Phase 5.1 錢包/結算骨架已完成；Phase 5.2 通知中心骨架已完成（詳見 `docs/PHASE5_NOTES.md`）
 
-5.1 錢包/結算（Courier Payouts）骨架
+5.1 錢包/結算（Courier Payouts）骨架 ✅
 - Models: `Payout`, `WalletTransaction` (Freezed)
 - Service: `WalletService` (getPayouts, getTransactions with mock fallback)
 - UI: `WalletPage` (Tabs: 結算/明細, EmptyState, RefreshIndicator)
-- AC: UI 可運行並顯示 mock 資料；後端表不存在時優雅 fallback；單元測試通過。
+- AC: UI 可運行並顯示 mock 資料；後端表不存在時優雅 fallback；單元測試通過（7 測試）。
 
-5.2 通知中心
-- Models: `Notification` (type, title, message, createdAt, read)
-- Service: `NotificationsService` (mock fallback)
-- UI: `NotificationsPage` (未讀/全部 Tab)
-- AC: 同上。
+5.2 通知中心 ✅
+- Models: `NotificationItem` (id, userId, audience, type, title, message, data, createdAt, readAt; NotificationType enum)
+- Service: `NotificationCenterService` (listNotifications, markAsRead, markAllAsRead with mock fallback)
+- UI: `NotificationsPage` (未讀/全部 Tab, Dismissible, 點擊/長按標記已讀, EmptyState, RefreshIndicator)
+- Route: `/notifications` in `app_router.dart`
+- AC: UI 可運行並顯示 mock 資料；後端表不存在時優雅 fallback；單元測試通過（8 測試）。
 
 5.3 測試與文件完善
 - Files: under `tests/` and package tests; `docs/*_whitepaper.md`

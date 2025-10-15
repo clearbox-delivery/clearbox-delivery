@@ -38,7 +38,7 @@ class _WalletPageState extends ConsumerState<WalletPage>
   Future<void> _loadData() async {
     final authService = ref.read(authServiceProvider);
     final courierId = authService.currentUserId;
-    
+
     if (courierId == null) {
       setState(() => _loading = false);
       return;

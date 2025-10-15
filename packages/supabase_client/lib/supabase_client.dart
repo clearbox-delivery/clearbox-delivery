@@ -6,6 +6,7 @@ export 'src/order_service.dart';
 export 'src/realtime_service.dart';
 export 'src/menu_service.dart';
 export 'src/notifications_service.dart';
+export 'src/notification_center_service.dart';
 export 'src/otp_service.dart';
 export 'src/device_service.dart';
 export 'src/address_service.dart';
