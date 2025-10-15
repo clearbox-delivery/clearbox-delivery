@@ -105,17 +105,30 @@
 **實作計劃**（待執行）：
 1. **UI 倒數計時**：
    - Login/註冊頁加入 `Timer.periodic` 倒數（Email 30s、Phone 120s）
+   - State：`_otpCooldownSeconds`（int?），計時中 > 0，完成後 = 0
    - 計時中禁用「發送 OTP」按鈕，顯示「重新發送 (${秒數}s)」
    - 計時結束後恢復按鈕可用狀態
+   - 發送成功後啟動計時器：`Timer.periodic(Duration(seconds: 1), (timer) { ... })`
 2. **Dev Flag 切換**：
-   - `ALLOW_DEV_MODE=true` 時顯示「開發模式：跳過冷卻」banner
+   - `ALLOW_DEV_MODE=true` 時顯示「開發模式：跳過冷卻」banner（黃色、頂部）
    - 允許無視倒數立即重發（dev only）
+   - 實作：`const allowDevMode = bool.fromEnvironment('ALLOW_DEV_MODE', defaultValue: false);`
 3. **配額追蹤**（可選）：
-   - 客端記錄當日發送次數（SharedPreferences）
-   - 達到配額時顯示警告「今日配額已用盡」
+   - 客端記錄當日發送次數（SharedPreferences，key: `otp_count_${deviceId}_${date}`）
+   - 達到配額時顯示警告「今日配額已用盡」（Toast + 按鈕禁用）
 4. **測試**：
    - 單元測試：倒數計時邏輯、按鈕禁用/啟用狀態
    - Widget smoke test：dev flag 顯示/隱藏
+   
+**檔案位置**：
+- `apps/courier_app/lib/features/auth/presentation/login_page.dart`（或註冊流程頁面）
+- `apps/courier_app/lib/features/auth/presentation/register_flow/register_coordinator_page.dart`
+
+**預期行為**（驗收標準）：
+- ✅ Email OTP 發送後按鈕禁用 30s，顯示倒數
+- ✅ Phone OTP 發送後按鈕禁用 120s，顯示倒數
+- ✅ Dev flag 開啟時可繞過冷卻
+- ✅ 配額達上限時顯示警告（可選）
 
 ### RPC Happy-Path 驗證
 **狀態**：✅ 邏輯已實作

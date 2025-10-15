@@ -130,10 +130,10 @@ COMMENT ON FUNCTION mark_notifications_read IS 'Mark specific notifications as r
 COMMENT ON FUNCTION mark_all_read IS 'Mark all user notifications as read';
 
 -- Add updated_at column if not exists
-DO $$ 
+DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
+    SELECT 1 FROM information_schema.columns
     WHERE table_name = 'notifications' AND column_name = 'updated_at'
   ) THEN
     ALTER TABLE notifications ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();

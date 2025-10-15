@@ -1,0 +1,98 @@
+feat(phase5.4): backend migrations prep (wallet + notifications + regenerate pickup code) [REQ-COU-VERIF-004/REQ-COU-WALLET-003/REQ-COU-NOTIF-004/TC-*]
+
+Phase 5.4 - Backend Migrations Preparation Complete
+
+A) Regenerate Pickup Code RPC ✅
+Migration: infra/supabase/migrations/20250115000005_regenerate_pickup_code.sql
+- RPC: regenerate_pickup_code(p_order_id) RETURNS TEXT
+  - Verify merchant owns order and status IN ('PENDING_COURIER', 'WAITING_PICKUP')
+  - Generate new 6-digit code: LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0')
+  - Update orders.pickup_code, log to order_events
+  - GRANT EXECUTE TO authenticated
+- Service layer: OrderService.regeneratePickupCode(orderId) -> String?
+  - Calls RPC regenerate_pickup_code
+  - Fallback: Returns null if RPC doesn't exist or fails
+- Tests (4 tests added, 94 total pass):
+  - TC-COU-VERIF-011: Regenerated code is 6 digits
+  - TC-COU-VERIF-012: Multiple generations unique
+  - TC-COU-VERIF-013: Fallback returns null when RPC unavailable
+  - TC-COU-VERIF-014: Success returns valid 6-digit string
+
+B) Wallet Tables & RPCs ✅
+Migration: infra/supabase/migrations/20250115000006_wallet_tables_and_rpcs.sql
+- Tables:
+  - payouts: id, courier_id, amount, period_start, period_end, status, order_count, paid_at, payment_method, notes, created_at, updated_at
+    - Indexes: (courier_id, period_end DESC), (status, created_at DESC)
+    - RLS: Courier SELECT own; Admin SELECT all, INSERT, UPDATE
+  - transactions: id, courier_id, order_id (nullable), amount, type, description, created_at
+    - Indexes: (courier_id, created_at DESC), (order_id)
+    - RLS: Courier SELECT own; System/Admin INSERT
+- RPCs:
+  - get_courier_payouts(p_courier_id) RETURNS SETOF payouts
+    - Auth: Courier or admin only
+    - Limit 100, ORDER BY period_end DESC
+  - get_courier_transactions(p_courier_id) RETURNS SETOF transactions
+    - Auth: Courier or admin only
+    - Limit 100, ORDER BY created_at DESC
+- Execution steps documented in docs/PHASE5_NOTES.md
+- Frontend already implements fallback (will auto-switch to RPC when available)
+
+C) Notifications Table & RPCs ✅
+Migration: infra/supabase/migrations/20250115000007_notifications_table_and_rpcs.sql
+- Table:
+  - notifications: id, user_id, audience, type, title, message, data (jsonb), created_at, read_at, updated_at
+    - Indexes: (user_id, created_at DESC), (audience, created_at DESC), (read_at WHERE IS NULL)
+    - RLS: User SELECT own; System/Admin INSERT; User UPDATE own read_at
+- RPCs:
+  - get_notifications(p_user_id, p_unread_only default false) RETURNS SETOF notifications
+  - mark_notifications_read(p_ids uuid[]) RETURNS INT
+  - mark_all_read(p_user_id) RETURNS INT
+- All RPCs include authorization checks (user or admin only)
+- Execution steps documented
+- Frontend already implements fallback (will auto-switch when available)
+
+Documentation:
+- docs/PHASE5_NOTES.md: Added Section 5.4
+  - Wallet tables/RPCs schema and execution steps
+  - Notifications table/RPCs schema and execution steps
+  - Regenerate pickup code RPC details and service integration
+  - Execution commands (supabase start, migration up, verification)
+- docs/PHASE6_NOTES.md: Updated summary
+  - Phase 5.4 migrations complete status
+  - Test count updated (94 core_data + 11 service = 105 total)
+- docs/implementation_plan.md: Updated Phase 5
+  - Phase 5.4 marked complete (✅)
+  - Added backend migrations prep details
+
+Acceptance:
+- [x] 3 migration SQL files created (regenerate pickup code, wallet, notifications)
+- [x] All tables have proper indexes and RLS policies
+- [x] All RPCs have authorization checks and GRANT EXECUTE
+- [x] OrderService.regeneratePickupCode implemented with fallback
+- [x] Execution steps documented (supabase commands, verification)
+- [x] Tests added (4 regenerate pickup code tests, 94 total pass)
+- [x] Frontend ready to use RPCs when migrations executed
+- [x] docs/PHASE5_NOTES.md updated (Section 5.4)
+- [x] docs/PHASE6_NOTES.md updated (summary)
+- [x] docs/implementation_plan.md updated (Phase 5.4 complete)
+- [x] No docs/archive/ modifications
+
+Benefits:
+- Backend schema and RPCs fully defined (ready for execution)
+- Service layer ready to auto-switch from mock to real data
+- Clear execution instructions for admin/DevOps
+- Zero frontend code changes needed when migrations run
+- Comprehensive test coverage (105 tests)
+
+Next Steps (by admin):
+1. Execute migrations: supabase db reset or supabase migration up
+2. Verify tables and RPCs created successfully
+3. Test RPC calls with real data
+4. Frontend will automatically switch from mock to real data
+
+Tests:
+cd packages/core_data && dart test
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+

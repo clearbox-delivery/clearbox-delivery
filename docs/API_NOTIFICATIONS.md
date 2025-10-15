@@ -156,15 +156,51 @@ When the backend table doesn't exist, the service returns 5 mock notifications:
 - 2 unread: `order_new`, `payout_processed`
 - 3 read: `order_delivered`, `kyc_status_update`, `system_announcement`
 
+## Realtime Integration (Planned)
+
+### Topic Naming
+- Channel: `notifications:{audience}:{user_id}`
+- Example: `notifications:courier:550e8400-e29b-41d4-a716-446655440000`
+
+### Event Types
+- Broadcast events match notification `type` field
+- Examples: `order_new`, `order_accepted`, `payout_processed`, etc.
+
+### Client-side Subscription (Planned)
+```dart
+// In NotificationsPage or app-level listener
+final channel = supabase
+  .channel('notifications:courier:${userId}')
+  .onBroadcast(
+    event: '*',
+    callback: (payload) {
+      // Update cache and unread count
+      // Refresh NotificationsPage if visible
+    },
+  )
+  .subscribe();
+```
+
+### Feature Flag
+- Dev mode default: enabled
+- Production: enabled after FCM setup
+- Toggle: `const enableRealtimeNotifications = bool.fromEnvironment('ENABLE_REALTIME_NOTIF', defaultValue: true);`
+
+### Badge Update
+- On broadcast received: increment unread count
+- Update TabBar title: "未讀 (N+1)"
+- Clear cache and refresh list
+
 ## Future Enhancements
-1. **Realtime Push**: Integrate Supabase Realtime or FCM for instant notifications
-2. **Auto-generation**: Trigger notifications on order status changes (via RPC/DB trigger)
-3. **Deep Linking**: Navigate to specific pages based on notification `data` field
-4. **Filtering**: Filter by type (order/system/payout)
-5. **Pagination**: Load more than 100 notifications
-6. **Badge Count**: Display unread count on app icon/tab bar
+1. **Realtime Push**: ⏸️ Partially planned (topic naming defined, subscription code pending)
+2. **FCM Integration**: iOS/Android push notifications for background delivery
+3. **Auto-generation**: Trigger notifications on order status changes (via RPC/DB trigger)
+4. **Deep Linking**: Navigate to specific pages based on notification `data` field
+5. **Filtering**: Filter by type (order/system/payout)
+6. **Pagination**: Load more than 100 notifications
+7. **Badge Count**: Display unread count on app icon/tab bar
 
 ---
 
-**Version**: Phase 5.2 Notification Center Skeleton
+**Version**: Phase 5.4 Backend Migrations Prepared  
 **Last Updated**: 2025-01-15

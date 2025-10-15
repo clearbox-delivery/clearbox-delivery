@@ -201,7 +201,7 @@ Status: APPROVED (policies aligned; no login-time device blocking, emulator-only
 - AC: UI 可運行並顯示 mock 資料；後端表不存在時優雅 fallback；單元測試通過（8 測試）。
 
 5.3 測試與可靠性強化 ✅
-- Service tests: WalletService (5 tests), NotificationCenterService (6 tests) 
+- Service tests: WalletService (5 tests), NotificationCenterService (6 tests)
 - Cache behavior: hit/miss, clear, key strategy
 - Fallback logic: mock data consistency when backend unavailable
 - Data source strategy: REST → mock → cache (documented in PHASE5_NOTES.md)
