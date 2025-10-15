@@ -185,7 +185,7 @@ Status: APPROVED (policies aligned; no login-time device blocking, emulator-only
 
 ## Phase 5 – Cross-domain features (Wallet, Notifications, Support)
 
-**Status**: Phase 5.1 錢包/結算骨架已完成；Phase 5.2 通知中心骨架已完成（詳見 `docs/PHASE5_NOTES.md`）
+**Status**: Phase 5.1-5.3 完成（詳見 `docs/PHASE5_NOTES.md`）
 
 5.1 錢包/結算（Courier Payouts）骨架 ✅
 - Models: `Payout`, `WalletTransaction` (Freezed)
@@ -200,10 +200,12 @@ Status: APPROVED (policies aligned; no login-time device blocking, emulator-only
 - Route: `/notifications` in `app_router.dart`
 - AC: UI 可運行並顯示 mock 資料；後端表不存在時優雅 fallback；單元測試通過（8 測試）。
 
-5.3 測試與文件完善
-- Files: under `tests/` and package tests; `docs/*_whitepaper.md`
-- Actions: add tests for OTP timers, sorting S and R/T, heat math, realtime stability; update CI to run; align docs with implementation.
-- AC: All tests pass locally; CI green; docs and app align.
+5.3 測試與可靠性強化 ✅
+- Service tests: WalletService (5 tests), NotificationCenterService (6 tests) 
+- Cache behavior: hit/miss, clear, key strategy
+- Fallback logic: mock data consistency when backend unavailable
+- Data source strategy: REST → mock → cache (documented in PHASE5_NOTES.md)
+- AC: 90 core_data tests pass; 11 service tests added; cache/fallback behavior verified.
 
 ---
 

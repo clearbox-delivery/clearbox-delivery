@@ -104,7 +104,7 @@ BEGIN
   UPDATE notifications
   SET read_at = NOW()
   WHERE id = ANY(p_ids) AND read_at IS NULL;
-  
+
   GET DIAGNOSTICS v_count = ROW_COUNT;
   RETURN v_count;
 END;
@@ -123,7 +123,7 @@ BEGIN
   UPDATE notifications
   SET read_at = NOW()
   WHERE user_id = p_user_id AND read_at IS NULL;
-  
+
   GET DIAGNOSTICS v_count = ROW_COUNT;
   RETURN v_count;
 END;
@@ -166,5 +166,5 @@ When the backend table doesn't exist, the service returns 5 mock notifications:
 
 ---
 
-**Version**: Phase 5.2 Notification Center Skeleton  
+**Version**: Phase 5.2 Notification Center Skeleton
 **Last Updated**: 2025-01-15

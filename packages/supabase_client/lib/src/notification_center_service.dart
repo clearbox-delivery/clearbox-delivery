@@ -101,7 +101,7 @@ class NotificationCenterService {
   // Mock data generators (fallback)
   List<NotificationItem> _getMockNotifications(String userId, bool unreadOnly) {
     final now = DateTime.now();
-    
+
     final allNotifications = [
       NotificationItem(
         id: 'mock-notif-1',

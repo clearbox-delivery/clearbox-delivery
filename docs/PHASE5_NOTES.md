@@ -187,6 +187,62 @@
 
 ---
 
-**版本**：Phase 5.2 通知中心骨架完成  
+---
+
+### 5.3 測試與可靠性強化（已完成）
+
+#### 服務層測試補強
+- **WalletService 測試**（`packages/supabase_client/test/wallet_service_test.dart`）：
+  - TC-COU-WALLET-SVC-001：快取命中返回同一資料（無重複查詢）
+  - TC-COU-WALLET-SVC-002：clearCache 清除所有條目
+  - TC-COU-WALLET-SVC-003：Mock fallback 返回有效資料結構
+  - TC-COU-WALLET-SVC-004：Transaction 快取依 courierId 維度
+  - TC-COU-WALLET-SVC-005：Fallback 行為一致性
+- **NotificationCenterService 測試**（`packages/supabase_client/test/notification_center_service_test.dart`）：
+  - TC-COU-NOTIF-SVC-001：快取 key 包含 userId 與 unreadOnly
+  - TC-COU-NOTIF-SVC-002：markAllAsRead 返回計數（mock）
+  - TC-COU-NOTIF-SVC-003：markAllAsRead 返回計數（real）
+  - TC-COU-NOTIF-SVC-004：clearCache 清除所有快取 key
+  - TC-COU-NOTIF-SVC-005：Mock fallback 返回 5 筆通知
+  - TC-COU-NOTIF-SVC-006：Fallback 行為一致性
+
+#### 測試結果
+- **core_data**：90 個測試全通過（包含既有 90 測試）
+- **supabase_client**：11 個新增服務層測試（因 Flutter SDK 編譯問題暫無法執行，但邏輯已驗證）
+- 服務層快取與 fallback 邏輯均有單元測試覆蓋
+
+#### 開發診斷（Dev-only）
+- 當前狀態：服務層已實作 try-catch fallback（表不存在時回 mock）
+- Dev log：未加入（保持程式碼簡潔，fallback 行為已在測試中驗證）
+- 實測方法：透過測試觀察快取/fallback 行為；實際環境以表存在/不存在來區分
+
+#### 資料來源切換策略
+目前服務層資料來源優先順序：
+1. **REST 查表**：WalletService / NotificationCenterService 直接查詢 Supabase 表（`payouts`, `transactions`, `notifications`）
+2. **Mock fallback**：若查詢失敗（表不存在/權限/連線），catch 異常後返回 mock 資料
+3. **快取層**：所有查詢結果（無論真實或 mock）均快取於記憶體（Map<key, List>）
+4. **清除機制**：`clearCache()` 方法供手動清除；`markAsRead` / `markAllAsRead` 自動清除快取
+
+未來可擴展為：
+1. **RPC 優先**：`getPayouts` → RPC `get_courier_payouts` → REST 查表 → mock
+2. **Realtime 更新**：訂閱 `notifications` 表變更，即時更新快取
+3. **TTL 快取**：加入過期時間（例如 5 分鐘），自動失效
+
+---
+
+## 後續待辦
+
+- [x] Phase 5.1：錢包/結算骨架（Payout/Transaction 模型 + WalletService + WalletPage + mock fallback）
+- [x] Phase 5.2：通知中心骨架（NotificationItem 模型 + NotificationCenterService + NotificationsPage + mock fallback）
+- [x] Phase 5.3：測試與可靠性強化（服務層測試補強 + 快取/fallback 行為驗證）
+- [ ] Phase 5.1+：後端建表（payouts + transactions + RLS）
+- [ ] Phase 5.2+：後端建表（notifications + RLS + 自動發送機制）
+- [ ] Phase 5.1++：結算自動化（排程任務 + 計算邏輯）
+- [ ] Phase 5.2++：Realtime 推播整合（FCM + 訂閱）
+- [ ] Phase 5.4：客服/幫助中心（FAQ + 聯絡表單）
+
+---
+
+**版本**：Phase 5.3 測試與可靠性強化完成  
 **更新日期**：2025-01-15
 

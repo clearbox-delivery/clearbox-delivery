@@ -1,0 +1,97 @@
+feat(phase5): notification center skeleton [REQ-COU-NOTIF-001/TC-COU-NOTIF-*]
+
+Phase 5.2 - Notification Center Complete
+
+Models (Freezed with JSON serialization):
+- NotificationItem: id, userId, audience, type, title, message, data (Map<String,dynamic>?), createdAt, readAt
+- NotificationType enum: orderNew, orderAccepted, orderPrepReady, orderPickedUp, orderDelivered, orderCancelled, orderArriving, systemAnnouncement, payoutProcessed, kycStatusUpdate
+  - Chinese displayName for all types
+  - fromString mapping (case-insensitive, underscore-tolerant)
+
+NotificationCenterService (with mock fallback):
+- packages/supabase_client/lib/src/notification_center_service.dart
+- listNotifications(userId, unreadOnly): Queries notifications table → fallback to mock (5 notifications: 2 unread + 3 read)
+- markAsRead(List<String> ids): Batch update read_at timestamp
+- markAllAsRead(userId): Mark all user's unread as read
+- LRU cache: _cache (Map<cacheKey, List>, key = "$userId-$unreadOnly")
+- clearCache(): Invalidate cache
+- Graceful degradation: try-catch returns mock if table doesn't exist
+
+NotificationsPage UI (Full Design Tokens):
+- apps/courier_app/lib/features/notifications/presentation/notifications_page.dart
+- TabBar: "未讀 (N)", "全部" (TabController)
+- Unread Tab:
+  - Cards: type icon, title, message (max 2 lines), timestamp, unread red dot
+  - Background highlight (brand.withOpacity(0.05))
+  - Dismissible: swipe right to mark as read (green done icon)
+  - Tap: mark as read
+  - Long press: dialog to confirm mark as read
+  - EmptyState: "沒有未讀通知" (icon + text)
+  - RefreshIndicator: pull to refresh
+- All Tab:
+  - Same as unread but no dismissible (DismissDirection.none)
+  - EmptyState: "暫無通知記錄"
+- AppBar Actions: "全部標記為已讀" button (only shown when unread > 0)
+- List Key: Key('notif-${id}')
+- Icon/Color mapping:
+  - orderNew → delivery_dining / brand
+  - orderAccepted, orderDelivered, payoutProcessed, kycStatusUpdate → success
+  - orderCancelled → danger
+  - orderArriving → warning
+  - default → textSecondary
+
+Route Integration:
+- apps/courier_app/lib/router/app_router.dart
+- Added /notifications route
+- Accessible via direct navigation (minimal diff, no bottom nav slot yet)
+
+Unit Tests (8 tests, all pass):
+- TC-COU-NOTIF-001: NotificationItem model creation
+- TC-COU-NOTIF-002: NotificationType enum mapping
+- TC-COU-NOTIF-003: JSON serialization with data field
+- TC-COU-NOTIF-004: readAt timestamp
+- TC-COU-NOTIF-005: Filter unread notifications
+- TC-COU-NOTIF-006: Sort by createdAt descending
+- TC-COU-NOTIF-007: Mark notification as read (simulate)
+- TC-COU-NOTIF-008: Mock data fallback logic
+
+Documentation:
+- docs/PHASE5_NOTES.md: Added Section 5.2
+  - Models, service layer, UI details
+  - Backend schema suggestions (notifications table, indexes, RLS)
+  - RPC suggestions (get_notifications, mark_notifications_read, mark_all_read)
+  - Mock data fallback strategy
+  - Known gaps (backend table, realtime push, auto-generation, deep linking, filtering, bottom nav integration)
+- docs/API_NOTIFICATIONS.md (new): Complete notification contract
+  - Table schema, RLS policies
+  - Notification types table (order-related, system)
+  - RPC definitions with SQL
+  - Client-side usage examples
+  - Mock data spec
+  - Future enhancements
+- docs/implementation_plan.md: Updated Phase 5
+  - Phase 5.2 marked complete (✅)
+  - Added AC details
+
+Acceptance:
+- [x] Notification center page displays unread and all tabs
+- [x] Unread notifications have visual indicator (red dot + highlight)
+- [x] Mark as read: single (tap/swipe/long-press) and batch (toolbar button)
+- [x] Backend table/RPC unavailable: frontend displays mock data gracefully
+- [x] UI uses Design Tokens, list keys stable
+- [x] Loading/Empty/Error layouts complete
+- [x] Unit tests pass (8 notification tests, 90 total)
+- [x] docs/PHASE5_NOTES.md updated, API_NOTIFICATIONS.md created
+- [x] No docs/archive/ modifications
+
+Benefits:
+- Notification center ready for use (displays mock until backend built)
+- Realtime push integration prepared (contract defined)
+- Phase 5 cross-domain expansion continues (5.1 Wallet + 5.2 Notifications complete)
+
+Tests:
+cd packages/core_data && dart test
+
+Local startup (Courier App, 5201):
+flutter run -d chrome --web-port 5201 --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=ALLOW_DEV_MODE=true
+
