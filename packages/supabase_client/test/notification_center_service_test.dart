@@ -14,7 +14,7 @@ void main() {
       expect(getCacheKey('u1', true), 'u1-true');
       expect(getCacheKey('u1', false), 'u1-false');
       expect(getCacheKey('u2', true), 'u2-true');
-      
+
       // Different keys for same user with different filters
       expect(getCacheKey('u1', true) != getCacheKey('u1', false), true);
     });
@@ -81,11 +81,11 @@ void main() {
       cache['u1-true'] = [];
       cache['u1-false'] = [];
       cache['u2-true'] = [];
-      
+
       expect(cache.length, 3);
-      
+
       cache.clear();
-      
+
       expect(cache.length, 0);
     });
 
@@ -154,7 +154,7 @@ void main() {
 
       final all = getMockNotifications('u1', false);
       final unread = getMockNotifications('u1', true);
-      
+
       expect(all.length, 5);
       expect(unread.length, 2);
       expect(unread.every((n) => n.readAt == null), true);
@@ -162,7 +162,7 @@ void main() {
 
     test('TC-COU-NOTIF-SVC-006: Fallback behavior consistency', () {
       bool backendAvailable = false;
-      
+
       List<NotificationItem> getNotifications() {
         if (!backendAvailable) {
           // Fallback to mock

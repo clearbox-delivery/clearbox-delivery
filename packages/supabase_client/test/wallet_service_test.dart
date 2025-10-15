@@ -10,14 +10,14 @@ void main() {
     test('TC-COU-WALLET-SVC-001: Cache hit returns same data without query', () async {
       // This test verifies cache behavior (conceptual, as we can't mock SupabaseClient easily)
       // In real scenario: first call queries, second call hits cache
-      
+
       // Simulate cache logic
       final cache = <String, List<Payout>>{};
       final courierId = 'c1';
-      
+
       // First call: cache miss
       expect(cache.containsKey(courierId), false);
-      
+
       // Populate cache (simulate first query)
       cache[courierId] = [
         Payout(
@@ -30,7 +30,7 @@ void main() {
           createdAt: DateTime.now(),
         ),
       ];
-      
+
       // Second call: cache hit
       expect(cache.containsKey(courierId), true);
       expect(cache[courierId]!.length, 1);
@@ -41,12 +41,12 @@ void main() {
       final cache = <String, List<Payout>>{};
       cache['c1'] = [];
       cache['c2'] = [];
-      
+
       expect(cache.length, 2);
-      
+
       // Clear cache
       cache.clear();
-      
+
       expect(cache.length, 0);
     });
 
@@ -83,9 +83,9 @@ void main() {
         type: 'earnings',
         createdAt: DateTime.now(),
       );
-      
+
       cache['c1'] = [tx1];
-      
+
       expect(cache['c1']!.length, 1);
       expect(cache['c1']!.first.type, 'earnings');
     });
@@ -93,7 +93,7 @@ void main() {
     test('TC-COU-WALLET-SVC-005: Fallback behavior consistency', () {
       // Simulate service fallback logic
       bool backendAvailable = false;
-      
+
       List<Payout> getPayouts() {
         if (!backendAvailable) {
           // Fallback to mock
