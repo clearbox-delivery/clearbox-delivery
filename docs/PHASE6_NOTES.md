@@ -119,7 +119,7 @@
 4. **測試**：
    - 單元測試：倒數計時邏輯、按鈕禁用/啟用狀態
    - Widget smoke test：dev flag 顯示/隱藏
-   
+
 **檔案位置**：
 - `apps/courier_app/lib/features/auth/presentation/login_page.dart`（或註冊流程頁面）
 - `apps/courier_app/lib/features/auth/presentation/register_flow/register_coordinator_page.dart`

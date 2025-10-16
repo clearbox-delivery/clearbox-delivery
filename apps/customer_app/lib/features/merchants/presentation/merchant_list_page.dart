@@ -5,7 +5,7 @@ import 'package:core_data/core_data.dart';
 import 'package:domain/domain.dart';
 import 'package:supabase_client/supabase_client.dart';
 import 'package:geo_h3/geo_h3.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:customer_app/features/merchants/presentation/menu_browse_page.dart';
 import 'package:customer_app/providers/selected_address_provider.dart';
 
@@ -90,15 +90,15 @@ class MerchantListPage extends ConsumerWidget {
     UserAddress selectedAddress,
   ) async {
     final supabase = ref.read(supabaseProvider);
-    final h3Service = H3Service();
+    // Web helper uses static helpers
 
     // Get customer location and H3 cell
     final customerLoc = LatLng(selectedAddress.latitude, selectedAddress.longitude);
-    final customerH3 = h3Service.latLngToCell(customerLoc, 10);
+    final customerH3 = H3Service.toH3Res10(customerLoc);
 
     // Generate k-ring of 40
     // [customer_app_whitepaper.md Section 4.5] k=40 ring
-    final ring = h3Service.gridDisk(customerH3, 40);
+    final ring = H3Service.kRing(customerH3, 40);
 
     // Fetch all merchants
     final response = await supabase

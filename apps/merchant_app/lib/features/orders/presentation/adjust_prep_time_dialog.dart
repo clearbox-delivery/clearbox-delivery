@@ -131,7 +131,7 @@ class _AdjustPrepTimeDialogState extends ConsumerState<AdjustPrepTimeDialog> {
             CBButton(
               text: '關閉',
               onPressed: _isLoading ? null : () => Navigator.pop(context),
-              variant: CBButtonVariant.secondary,
+              type: CBButtonType.secondary,
             ),
           ],
         ),

@@ -19,7 +19,7 @@ class PickedUpTab extends ConsumerWidget {
       return const Center(child: Text('Please login'));
     }
 
-    final ordersStream = ref.watch(realtimeServiceProvider).watchMerchantOrders(merchantId);
+    final ordersStream = ref.watch(realtimeServiceProvider).watchMerchantOrders(merchantId: merchantId);
 
     return StreamBuilder<List<Order>>(
       stream: ordersStream,
@@ -206,7 +206,7 @@ class _PickedUpCard extends ConsumerWidget {
                   text: '聯絡外送員',
                   onPressed: () => _handleContactCourier(context),
                   icon: Icons.phone_outlined,
-                  variant: CBButtonVariant.secondary,
+                  type: CBButtonType.secondary,
                   size: CBButtonSize.medium,
                 ),
               ),
@@ -216,7 +216,7 @@ class _PickedUpCard extends ConsumerWidget {
                   text: '聯絡顧客',
                   onPressed: () => _handleContactCustomer(context),
                   icon: Icons.chat_outlined,
-                  variant: CBButtonVariant.secondary,
+                  type: CBButtonType.secondary,
                   size: CBButtonSize.medium,
                 ),
               ),
@@ -233,8 +233,7 @@ class _PickedUpCard extends ConsumerWidget {
                   text: '查看路線',
                   onPressed: () => _handleViewRoute(context),
                   icon: Icons.map_outlined,
-                  variant: CBButtonVariant.secondary,
-                  size: CBButtonSize.small,
+                  type: CBButtonType.secondary,
                 ),
               ),
               const SizedBox(width: DesignTokens.sp3),
@@ -243,8 +242,7 @@ class _PickedUpCard extends ConsumerWidget {
                   text: '問題通報',
                   onPressed: () => _handleReportIssue(context),
                   icon: Icons.report_problem_outlined,
-                  variant: CBButtonVariant.secondary,
-                  size: CBButtonSize.small,
+                  type: CBButtonType.secondary,
                 ),
               ),
             ],

@@ -138,7 +138,7 @@ class _AddressEditDialogState extends ConsumerState<AddressEditDialog> {
                   child: CBButton(
                     text: '取消',
                     onPressed: _isLoading ? null : () => Navigator.pop(context),
-                    variant: CBButtonVariant.secondary,
+                    type: CBButtonType.secondary,
                   ),
                 ),
                 const SizedBox(width: DesignTokens.sp4),

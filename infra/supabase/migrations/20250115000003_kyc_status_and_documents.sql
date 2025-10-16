@@ -95,5 +95,4 @@ EXECUTE FUNCTION update_kyc_documents_updated_at();
 
 -- Grant permissions
 GRANT SELECT, INSERT ON kyc_documents TO authenticated;
-GRANT USAGE ON SEQUENCE kyc_documents_id_seq TO authenticated;
 

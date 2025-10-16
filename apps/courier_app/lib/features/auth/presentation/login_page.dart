@@ -30,7 +30,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: DesignTokens.durationLong,
+      duration: DesignTokens.durSlow,
     );
 
     _logoSlideAnimation = Tween<Offset>(
@@ -38,7 +38,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       end: const Offset(0, -0.3),
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: DesignTokens.curveSmooth,
+      curve: DesignTokens.easeStandard,
     ));
 
     _formFadeAnimation = Tween<double>(
@@ -46,7 +46,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.3, 1.0, curve: DesignTokens.curveSmooth),
+      curve: const Interval(0.3, 1.0, curve: DesignTokens.easeStandard),
     ));
 
     _animationController.forward();
@@ -128,7 +128,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                       controller: _passwordController,
                       label: '密碼',
                       hintText: '輸入您的密碼',
-                      isPassword: true,
+                      obscureText: true,
                     ),
                     const SizedBox(height: DesignTokens.sp6),
 

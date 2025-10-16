@@ -42,7 +42,7 @@ class _Step5BankbookState extends State<Step5Bankbook> {
             text: '拍攝帳簿（Dev: 跳過）',
             onPressed: () {},
             icon: Icons.camera_alt,
-            variant: CBButtonVariant.secondary,
+            type: CBButtonType.secondary,
           ),
           const SizedBox(height: DesignTokens.sp6),
           CBInput(label: '銀行帳號', controller: _accountNumberController, hintText: '手動輸入帳號'),

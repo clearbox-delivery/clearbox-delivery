@@ -512,11 +512,11 @@ class _AccountPageState extends ConsumerState<AccountPage> {
   Color _getKycStatusColor(KycStatus status) {
     switch (status) {
       case KycStatus.approved:
-        return DesignTokens.success;
+        return DesignTokens.brand;
       case KycStatus.rejected:
         return DesignTokens.danger;
       case KycStatus.pending:
-        return DesignTokens.warning;
+        return DesignTokens.brand;
     }
   }
 }

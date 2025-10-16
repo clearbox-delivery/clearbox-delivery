@@ -117,7 +117,7 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
             const SizedBox(height: DesignTokens.sp4),
 
             CBInput(
-              label: '售價 (NT$)',
+              label: '售價 (NT\$)',
               controller: _priceController,
               keyboardType: TextInputType.number,
               hintText: '例如：80',
@@ -237,7 +237,7 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
               CBButton(
                 text: '刪除餐點',
                 onPressed: _handleDelete,
-                variant: CBButtonVariant.secondary,
+                type: CBButtonType.secondary,
                 size: CBButtonSize.large,
               ),
             ],

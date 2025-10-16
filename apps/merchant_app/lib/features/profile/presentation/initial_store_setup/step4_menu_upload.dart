@@ -29,7 +29,7 @@ class Step4MenuUpload extends StatelessWidget {
             text: '上傳菜單照片（Dev: 跳過）',
             onPressed: () => onNext({'menuUploaded': true}),
             icon: Icons.upload_file,
-            variant: CBButtonVariant.secondary,
+            type: CBButtonType.secondary,
           ),
           const SizedBox(height: DesignTokens.sp8),
           CBButton(text: '下一步', onPressed: () => onNext({}), size: CBButtonSize.large),

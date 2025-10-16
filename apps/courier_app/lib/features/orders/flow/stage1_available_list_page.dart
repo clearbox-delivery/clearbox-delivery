@@ -59,13 +59,19 @@ class _Stage1AvailableListPageState extends ConsumerState<Stage1AvailableListPag
     return Scaffold(
       backgroundColor: DesignTokens.bg,
       appBar: AppBar(
-        title: const Text('可接訂單'),
-        subtitle: const Text(
-          '依單位時間收益排序（R/T）',
-          style: TextStyle(
-            fontSize: DesignTokens.fsSm,
-            color: DesignTokens.textSecondary,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text('可接訂單'),
+            SizedBox(height: 2),
+            Text(
+              '依單位時間收益排序（R/T）',
+              style: TextStyle(
+                fontSize: DesignTokens.fsSm,
+                color: DesignTokens.textSecondary,
+              ),
+            ),
+          ],
         ),
       ),
       body: StreamBuilder<List<Order>>(

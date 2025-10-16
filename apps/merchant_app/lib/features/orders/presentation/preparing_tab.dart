@@ -21,7 +21,7 @@ class PreparingTab extends ConsumerWidget {
       return const Center(child: Text('Please login'));
     }
 
-    final ordersStream = ref.watch(realtimeServiceProvider).watchMerchantOrders(merchantId);
+    final ordersStream = ref.watch(realtimeServiceProvider).watchMerchantOrders(merchantId: merchantId);
 
     return StreamBuilder<List<Order>>(
       stream: ordersStream,
@@ -59,10 +59,7 @@ class PreparingTab extends ConsumerWidget {
           separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.sp4),
           itemBuilder: (context, index) {
             final order = preparingOrders[index];
-            return _PreparingCard(
-              key: Key('preparing-${order.id}'),
-              order: order,
-            );
+            return _PreparingCard(order: order);
           },
         );
       },
@@ -239,7 +236,7 @@ class _PreparingCard extends ConsumerWidget {
                 child: CBButton(
                   text: '需要更多時間',
                   onPressed: () => _showExtendDialog(context, ref),
-                  variant: CBButtonVariant.secondary,
+                  type: CBButtonType.secondary,
                   size: CBButtonSize.medium,
                 ),
               ),
@@ -256,8 +253,7 @@ class _PreparingCard extends ConsumerWidget {
                   text: '聯絡外送員',
                   onPressed: () => _handleContact(context),
                   icon: Icons.phone_outlined,
-                  variant: CBButtonVariant.secondary,
-                  size: CBButtonSize.small,
+                  type: CBButtonType.secondary,
                 ),
               ),
               const SizedBox(width: DesignTokens.sp3),
@@ -265,8 +261,7 @@ class _PreparingCard extends ConsumerWidget {
                 child: CBButton(
                   text: '特殊取消',
                   onPressed: () => _showCancelDialog(context, ref),
-                  variant: CBButtonVariant.secondary,
-                  size: CBButtonSize.small,
+                  type: CBButtonType.secondary,
                 ),
               ),
             ],

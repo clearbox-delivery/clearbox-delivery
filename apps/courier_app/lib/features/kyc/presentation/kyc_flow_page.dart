@@ -68,7 +68,7 @@ class _KYCFlowPageState extends ConsumerState<KYCFlowPage> {
                   CBButton(
                     text: '上一步',
                     onPressed: details.onStepCancel,
-                    variant: CBButtonVariant.secondary,
+                    type: CBButtonType.secondary,
                     size: CBButtonSize.large,
                   ),
                 ],
@@ -93,7 +93,7 @@ class _KYCFlowPageState extends ConsumerState<KYCFlowPage> {
                 const SizedBox(height: DesignTokens.sp3),
                 CBInput(
                   controller: _nameController,
-                  labelText: '真實姓名',
+                  label: '真實姓名',
                   hintText: '請輸入姓名',
                 ),
               ],
@@ -161,7 +161,7 @@ class _KYCFlowPageState extends ConsumerState<KYCFlowPage> {
                 const SizedBox(height: DesignTokens.sp3),
                 CBInput(
                   controller: _bankAccountController,
-                  labelText: '銀行帳號',
+                  label: '銀行帳號',
                   hintText: '請輸入完整銀行帳號',
                   keyboardType: TextInputType.number,
                 ),
@@ -206,13 +206,13 @@ class _KYCFlowPageState extends ConsumerState<KYCFlowPage> {
             const SizedBox(height: DesignTokens.sp2),
             Row(
               children: [
-                const Icon(Icons.check_circle, color: DesignTokens.success, size: 16),
+                const Icon(Icons.check_circle, color: DesignTokens.brand, size: 16),
                 const SizedBox(width: DesignTokens.sp2),
                 const Text(
                   '已上傳',
                   style: TextStyle(
                     fontSize: DesignTokens.fsSm,
-                    color: DesignTokens.success,
+                    color: DesignTokens.brand,
                   ),
                 ),
               ],
@@ -230,9 +230,9 @@ class _KYCFlowPageState extends ConsumerState<KYCFlowPage> {
       text: _documents[docKey] == null ? '拍照/上傳' : '重新上傳',
       onPressed: () => _handleUpload(docKey),
       icon: Icons.camera_alt_outlined,
-      variant: _documents[docKey] == null
-          ? CBButtonVariant.primary
-          : CBButtonVariant.secondary,
+      type: _documents[docKey] == null
+          ? CBButtonType.primary
+          : CBButtonType.secondary,
       size: CBButtonSize.medium,
     );
   }

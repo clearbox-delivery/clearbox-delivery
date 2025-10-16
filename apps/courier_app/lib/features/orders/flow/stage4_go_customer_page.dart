@@ -122,7 +122,7 @@ class _Stage4GoCustomerPageState extends ConsumerState<Stage4GoCustomerPage> {
                   type: CBToastType.info,
                 );
               },
-              variant: CBButtonVariant.secondary,
+              type: CBButtonType.secondary,
               size: CBButtonSize.large,
               icon: Icons.map_outlined,
             ),
@@ -139,7 +139,7 @@ class _Stage4GoCustomerPageState extends ConsumerState<Stage4GoCustomerPage> {
                   type: CBToastType.info,
                 );
               },
-              variant: CBButtonVariant.secondary,
+              type: CBButtonType.secondary,
               size: CBButtonSize.large,
               icon: Icons.phone_outlined,
             ),
@@ -168,7 +168,7 @@ class _Stage4GoCustomerPageState extends ConsumerState<Stage4GoCustomerPage> {
             CBButton(
               text: _deliveryPhotoUrl == null ? '送達拍照' : '重新拍照',
               onPressed: _handleTakeDeliveryPhoto,
-              variant: CBButtonVariant.secondary,
+              type: CBButtonType.secondary,
               size: CBButtonSize.large,
               icon: Icons.camera_alt,
             ),

@@ -212,10 +212,12 @@ class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
 
     try {
       final orderService = ref.read(orderServiceProvider);
-      await orderService.merchantConfirmOrder(
+      await orderService.merchantConfirm(
         orderId: widget.order.id,
-        prepTimeMinutes: prepTime,
-        merchantNotes: '已確認',
+        stockOk: true,
+        volumeOk: true,
+        prepMinutes: prepTime,
+        note: '已確認',
       );
 
       if (mounted) {

@@ -120,8 +120,5 @@ CREATE POLICY "Merchants can update own menu photos"
     )
   );
 
--- Comments
-COMMENT ON POLICY "Couriers can upload own KYC documents" ON storage.objects IS 'Couriers can only upload to their own folder in kyc-documents bucket';
-COMMENT ON POLICY "Couriers can upload order photos" ON storage.objects IS 'Couriers can upload photos for orders assigned to them';
-COMMENT ON POLICY "Merchants can upload menu photos" ON storage.objects IS 'Merchants can upload photos for their own menu items';
+-- Comments removed for local permission compatibility
 

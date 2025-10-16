@@ -202,7 +202,7 @@ class _SelectAddressGateState extends ConsumerState<SelectAddressGate> {
                     text: '新增地址',
                     onPressed: _showAddDialog,
                     icon: Icons.add,
-                    variant: CBButtonVariant.secondary,
+                    type: CBButtonType.secondary,
                   ),
                 ),
               ],

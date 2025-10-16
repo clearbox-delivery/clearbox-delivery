@@ -210,7 +210,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage>
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: DesignTokens.sp4),
         decoration: BoxDecoration(
-          color: DesignTokens.success,
+          color: DesignTokens.brand,
           borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
         ),
         child: const Icon(Icons.done, color: Colors.white),
@@ -349,11 +349,11 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage>
       case NotificationType.orderDelivered:
       case NotificationType.payoutProcessed:
       case NotificationType.kycStatusUpdate:
-        return DesignTokens.success;
+        return DesignTokens.brand;
       case NotificationType.orderCancelled:
         return DesignTokens.danger;
       case NotificationType.orderArriving:
-        return DesignTokens.warning;
+        return DesignTokens.brand;
       default:
         return DesignTokens.textSecondary;
     }

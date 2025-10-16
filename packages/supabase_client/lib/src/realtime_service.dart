@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_data/core_data.dart';
-import 'package:supabase_client/src/supabase_provider.dart';
+import 'package:supabase_client/supabase_client.dart';
 
 /// Realtime service for order updates
 /// [REQ-MER-CO-002] Orders visible within 2s

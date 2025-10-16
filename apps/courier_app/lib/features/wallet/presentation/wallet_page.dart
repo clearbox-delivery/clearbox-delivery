@@ -236,7 +236,7 @@ class _WalletPageState extends ConsumerState<WalletPage>
   Widget _buildTransactionCard(WalletTransaction tx) {
     final type = TransactionType.fromString(tx.type);
     final isPositive = type == TransactionType.earnings || type == TransactionType.bonus;
-    final amountColor = isPositive ? DesignTokens.success : DesignTokens.danger;
+    final amountColor = isPositive ? DesignTokens.brand : DesignTokens.danger;
     final dateFormat = DateFormat('MM/dd HH:mm');
 
     return CBCard(
@@ -293,13 +293,13 @@ class _WalletPageState extends ConsumerState<WalletPage>
   Color _getPayoutStatusColor(PayoutStatus status) {
     switch (status) {
       case PayoutStatus.paid:
-        return DesignTokens.success;
+        return DesignTokens.brand;
       case PayoutStatus.failed:
         return DesignTokens.danger;
       case PayoutStatus.processing:
         return DesignTokens.brand;
       case PayoutStatus.pending:
-        return DesignTokens.warning;
+        return DesignTokens.brand;
     }
   }
 

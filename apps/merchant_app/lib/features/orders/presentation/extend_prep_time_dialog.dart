@@ -110,7 +110,7 @@ class _ExtendPrepTimeDialogState extends ConsumerState<ExtendPrepTimeDialog> {
                   child: CBButton(
                     text: '+5 分鐘',
                     onPressed: _isLoading ? null : () => _handleExtend(5),
-                    variant: CBButtonVariant.secondary,
+                    type: CBButtonType.secondary,
                     size: CBButtonSize.large,
                   ),
                 ),
@@ -119,7 +119,7 @@ class _ExtendPrepTimeDialogState extends ConsumerState<ExtendPrepTimeDialog> {
                   child: CBButton(
                     text: '+10 分鐘',
                     onPressed: _isLoading ? null : () => _handleExtend(10),
-                    variant: CBButtonVariant.secondary,
+                    type: CBButtonType.secondary,
                     size: CBButtonSize.large,
                   ),
                 ),
@@ -131,7 +131,7 @@ class _ExtendPrepTimeDialogState extends ConsumerState<ExtendPrepTimeDialog> {
             CBButton(
               text: '關閉',
               onPressed: _isLoading ? null : () => Navigator.pop(context),
-              variant: CBButtonVariant.secondary,
+              type: CBButtonType.secondary,
             ),
           ],
         ),

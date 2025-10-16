@@ -199,7 +199,7 @@ class _AccountPageState extends ConsumerState<AccountPage> {
           CBButton(
             text: '登出',
             onPressed: _handleLogout,
-            variant: CBButtonVariant.secondary,
+            type: CBButtonType.secondary,
             size: CBButtonSize.large,
             icon: Icons.logout_outlined,
           ),
@@ -211,6 +211,7 @@ class _AccountPageState extends ConsumerState<AccountPage> {
     );
   }
 
+  // NOTE: remove duplicate helpers below by renaming second set
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(
@@ -487,91 +488,9 @@ class _AccountPageState extends ConsumerState<AccountPage> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: DesignTokens.sp2,
-        bottom: DesignTokens.sp2,
-      ),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: DesignTokens.fsSm,
-          fontWeight: FontWeight.w600,
-          color: DesignTokens.textSecondary,
-        ),
-      ),
-    );
-  }
+  // duplicate removed
 
-  Widget _buildListTile({
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    Color? textColor,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: textColor ?? DesignTokens.textSecondary),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: DesignTokens.fsMd,
-          color: textColor ?? DesignTokens.textPrimary,
-        ),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: DesignTokens.fsSm,
-                color: DesignTokens.textSecondary,
-              ),
-            )
-          : null,
-      trailing: const Icon(Icons.chevron_right, color: DesignTokens.textMuted),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.sp4,
-        vertical: DesignTokens.sp2,
-      ),
-    );
-  }
+  // duplicate removed
 
-  Widget _buildSwitchTile({
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: DesignTokens.textSecondary),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: DesignTokens.fsMd,
-          color: DesignTokens.textPrimary,
-        ),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: DesignTokens.fsSm,
-                color: DesignTokens.textSecondary,
-              ),
-            )
-          : null,
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: DesignTokens.brand,
-      ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.sp4,
-        vertical: DesignTokens.sp2,
-      ),
-    );
-  }
+  // duplicate removed
 }

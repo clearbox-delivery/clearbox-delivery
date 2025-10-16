@@ -33,7 +33,7 @@ class _Stage2GoMerchantPageState extends ConsumerState<Stage2GoMerchantPage> {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DesignTokens.bg,
       appBar: AppBar(
@@ -131,7 +131,7 @@ class _Stage2GoMerchantPageState extends ConsumerState<Stage2GoMerchantPage> {
                   type: CBToastType.info,
                 );
               },
-              variant: CBButtonVariant.secondary,
+              type: CBButtonType.secondary,
               size: CBButtonSize.large,
               icon: Icons.map_outlined,
             ),
@@ -160,7 +160,7 @@ class _Stage2GoMerchantPageState extends ConsumerState<Stage2GoMerchantPage> {
             CBButton(
               text: _pickupPhotoUrl == null ? '到店拍照' : '重新拍照',
               onPressed: _handleTakePickupPhoto,
-              variant: CBButtonVariant.secondary,
+              type: CBButtonType.secondary,
               size: CBButtonSize.large,
               icon: Icons.camera_alt,
             ),
@@ -172,10 +172,9 @@ class _Stage2GoMerchantPageState extends ConsumerState<Stage2GoMerchantPage> {
               label: '取餐碼（6位數）',
               controller: _pickupCodeController,
               keyboardType: TextInputType.number,
-              maxLength: 6,
               enabled: !_codeVerified,
               suffixIcon: _codeVerified
-                  ? const Icon(Icons.check_circle, color: DesignTokens.success)
+                  ? const Icon(Icons.check_circle, color: DesignTokens.brand)
                   : null,
             ),
 
@@ -185,7 +184,7 @@ class _Stage2GoMerchantPageState extends ConsumerState<Stage2GoMerchantPage> {
               CBButton(
                 text: '驗證取餐碼',
                 onPressed: _handleVerifyCode,
-                variant: CBButtonVariant.secondary,
+                type: CBButtonType.secondary,
                 size: CBButtonSize.large,
                 icon: Icons.pin_outlined,
               ),
@@ -303,7 +302,7 @@ class _Stage2GoMerchantPageState extends ConsumerState<Stage2GoMerchantPage> {
     }
 
     final orderService = ref.read(orderServiceProvider);
-    final verified = await orderService.verifyPickupCode(
+    final verified = await ref.read(orderServiceProvider).verifyPickupCode(
       orderId: widget.order.id,
       code: code,
     );

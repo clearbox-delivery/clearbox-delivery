@@ -22,7 +22,7 @@ class PendingConfirmTab extends ConsumerWidget {
     }
 
     // Watch realtime orders with PENDING_CONFIRM status
-    final ordersStream = ref.watch(realtimeServiceProvider).watchMerchantOrders(merchantId);
+    final ordersStream = ref.watch(realtimeServiceProvider).watchMerchantOrders(merchantId: merchantId);
 
     return StreamBuilder<List<Order>>(
       stream: ordersStream,
@@ -175,7 +175,7 @@ class _PendingConfirmCard extends ConsumerWidget {
             ),
           ],
 
-          if (order.customerNotes.isNotEmpty) ...[
+          if (order.customerNotes?.isNotEmpty == true) ...[
             const SizedBox(height: DesignTokens.sp3),
             Text(
               '備註: ${order.customerNotes}',
@@ -204,7 +204,7 @@ class _PendingConfirmCard extends ConsumerWidget {
                 child: CBButton(
                   text: '無法接單',
                   onPressed: () => _showCancelDialog(context, ref, order),
-                  variant: CBButtonVariant.secondary,
+                  type: CBButtonType.secondary,
                   size: CBButtonSize.medium,
                 ),
               ),

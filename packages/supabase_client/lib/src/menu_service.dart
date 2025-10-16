@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_data/core_data.dart';
-import 'package:supabase_client/src/supabase_provider.dart';
+import 'package:supabase_client/supabase_client.dart';
 
 /// 菜单服务
 /// [REQ-MER-MENU-001]
@@ -137,49 +137,6 @@ class MenuService {
   }
 }
 
-/// OTP 服务
-/// [REQ-AUTH-OTP-001, REQ-AUTH-OTP-002]
-class OTPService {
-  final SupabaseClient _client;
-
-  OTPService(this._client);
-
-  /// 发送 OTP
-  Future<Map<String, dynamic>> sendOTP({
-    required String identifier,
-    required String otpType, // 'EMAIL' or 'PHONE'
-    required String deviceId,
-  }) async {
-    final response = await _client.rpc('send_otp', params: {
-      'p_identifier': identifier,
-      'p_otp_type': otpType,
-      'p_device_id': deviceId,
-    });
-
-    return response as Map<String, dynamic>;
-  }
-
-  /// 验证 OTP
-  Future<bool> verifyOTP({
-    required String identifier,
-    required String otpCode,
-    required String otpType,
-    required String deviceId,
-  }) async {
-    try {
-      final response = await _client.rpc('verify_otp', params: {
-        'p_identifier': identifier,
-        'p_otp_code': otpCode,
-        'p_otp_type': otpType,
-        'p_device_id': deviceId,
-      });
-
-      return (response as Map<String, dynamic>)['verified'] == true;
-    } catch (e) {
-      return false;
-    }
-  }
-}
 
 /// 位置服务
 /// [REQ-COU-HEAT-001]
@@ -221,10 +178,7 @@ final menuServiceProvider = Provider<MenuService>((ref) {
   return MenuService(client);
 });
 
-final otpServiceProvider = Provider<OTPService>((ref) {
-  final client = ref.watch(supabaseProvider);
-  return OTPService(client);
-});
+// OTP Service 已獨立於 src/otp_service.dart，請由 supabase_client.dart 匯入使用
 
 final locationServiceProvider = Provider<LocationService>((ref) {
   final client = ref.watch(supabaseProvider);

@@ -61,7 +61,7 @@ class _SetPasswordPageState extends ConsumerState<SetPasswordPage> {
       final authService = ref.read(authServiceProvider);
 
       // Sign up with email and password
-      await authService.signUp(
+      await authService.signUpWithEmail(
         email: widget.email,
         password: password,
       );

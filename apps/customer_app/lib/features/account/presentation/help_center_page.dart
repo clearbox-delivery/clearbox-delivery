@@ -48,7 +48,7 @@ class HelpCenterPage extends ConsumerWidget {
               // TODO: Open support chat or link
             },
             icon: Icons.support_agent,
-            variant: CBButtonVariant.secondary,
+            type: CBButtonType.secondary,
           ),
         ],
       ),

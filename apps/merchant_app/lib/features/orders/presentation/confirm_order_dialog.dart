@@ -112,7 +112,7 @@ class _ConfirmOrderDialogState extends ConsumerState<ConfirmOrderDialog> {
               CBButton(
                 text: '上一步',
                 onPressed: () => setState(() => _step--),
-                variant: CBButtonVariant.secondary,
+                type: CBButtonType.secondary,
               ),
           ],
         ),

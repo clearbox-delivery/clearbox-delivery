@@ -34,7 +34,7 @@ class _StoreRecommendationsPageState
       body: _mockStores.isEmpty
           ? const Center(
               child: CBEmptyState(
-                message: '此類別暫無店家',
+                title: '此類別暫無店家',
                 icon: Icons.store_outlined,
               ),
             )

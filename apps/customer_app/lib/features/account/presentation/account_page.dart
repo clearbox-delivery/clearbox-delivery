@@ -130,7 +130,7 @@ class AccountPage extends ConsumerWidget {
                   context.go('/login');
                 }
               },
-              variant: CBButtonVariant.secondary,
+              type: CBButtonType.secondary,
               icon: Icons.logout,
             ),
           ],

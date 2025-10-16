@@ -33,10 +33,10 @@ class AvailableOrdersPage extends ConsumerWidget {
       body: Column(
         children: [
           // [REQ-COU-HEAT-001] 热度地图
-          const Padding(
-            padding: EdgeInsets.all(DesignTokens.sp4),
+          Padding(
+            padding: const EdgeInsets.all(DesignTokens.sp4),
             child: HeatMapWidget(
-              currentH3Cell: '8a1234567890abc', // TODO: 从GPS获取
+              heatValues: const {},
             ),
           ),
           const Divider(height: 1),

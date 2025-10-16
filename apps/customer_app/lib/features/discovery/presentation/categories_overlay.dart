@@ -78,7 +78,7 @@ class _CategoriesOverlayState extends ConsumerState<CategoriesOverlay>
         ).animate(_slideAnimation),
         child: Container(
           height: MediaQuery.of(context).size.height,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: DesignTokens.bg,
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(DesignTokens.radiusLg),

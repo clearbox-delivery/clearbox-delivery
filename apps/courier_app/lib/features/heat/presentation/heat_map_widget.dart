@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:core_ui/core_ui.dart';
@@ -290,8 +291,8 @@ class HeatMapPainter extends CustomPainter {
     final path = Path();
     for (int i = 0; i < 6; i++) {
       final angle = (60 * i - 30) * 3.14159 / 180;
-      final x = center.dx + size * (angle).cos();
-      final y = center.dy + size * (angle).sin();
+      final x = center.dx + size * math.cos(angle);
+      final y = center.dy + size * math.sin(angle);
 
       if (i == 0) {
         path.moveTo(x, y);
@@ -366,9 +367,9 @@ class HeatCellSheet extends StatelessWidget {
           _buildStatRow('活躍外送員', activeCouriers.toString(), Icons.delivery_dining),
           const SizedBox(height: DesignTokens.sp3),
           CBButton(
-            label: '關閉',
+            text: '關閉',
             onPressed: () => Navigator.of(context).pop(),
-            variant: CBButtonVariant.secondary,
+            type: CBButtonType.secondary,
           ),
         ],
       ),

@@ -1,6 +1,10 @@
 -- Courier RPCs for atomic order operations
 -- [REQ-COU-FLOW-007] Replace REST with RPCs for accept_order and mark_delivered
 
+-- Ensure we can change return types safely during local development/reset
+DROP FUNCTION IF EXISTS public.accept_order(UUID);
+DROP FUNCTION IF EXISTS public.mark_delivered(UUID, TEXT);
+
 -- RPC: Accept order (with optimistic locking and conflict handling)
 -- [TC-COU-ACPT-001] Accept order race condition handling
 CREATE OR REPLACE FUNCTION accept_order(

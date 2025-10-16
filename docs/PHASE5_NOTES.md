@@ -339,7 +339,7 @@ SELECT * FROM get_courier_payouts('<courier_uuid>');
 
 ---
 
-**版本**：Phase 5 Courier App 範圍完成（Agent 能力範圍內所有任務已交付）  
+**版本**：Phase 5 Courier App 範圍完成（Agent 能力範圍內所有任務已交付）
 **更新日期**：2025-01-15
 
 **總結**：

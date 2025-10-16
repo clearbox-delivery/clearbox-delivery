@@ -82,11 +82,11 @@ class OrderDetailsSheet extends ConsumerWidget {
                   const SizedBox(height: DesignTokens.sp6),
 
                   // Pricing
-                  _buildInfoRow('餐費', 'NT\$${order.mealPrice.toStringAsFixed(0)}'),
-                  _buildInfoRow('外送費', 'NT\$${order.deliveryPrice.toStringAsFixed(0)}'),
+                  _buildInfoRow('餐費', 'NT\$—'),
+                  _buildInfoRow('外送費', 'NT\$${order.deliveryPriceUserSet.toStringAsFixed(0)}'),
                   _buildInfoRow(
                     '總計',
-                    'NT\$${(order.mealPrice + order.deliveryPrice).toStringAsFixed(0)}',
+                    'NT\$${(order.deliveryPriceUserSet).toStringAsFixed(0)}',
                     isTotal: true,
                   ),
 
@@ -108,7 +108,7 @@ class OrderDetailsSheet extends ConsumerWidget {
                       // TODO: Navigate to rating page
                       Navigator.pop(context);
                     },
-                    variant: CBButtonVariant.secondary,
+                    type: CBButtonType.secondary,
                   ),
                 ),
                 const SizedBox(width: DesignTokens.sp4),

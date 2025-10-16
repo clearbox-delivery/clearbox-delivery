@@ -108,7 +108,7 @@ class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
                   child: CBButton(
                     text: '返回',
                     onPressed: _isLoading ? null : () => Navigator.pop(context),
-                    variant: CBButtonVariant.secondary,
+                    type: CBButtonType.secondary,
                   ),
                 ),
                 const SizedBox(width: DesignTokens.sp4),

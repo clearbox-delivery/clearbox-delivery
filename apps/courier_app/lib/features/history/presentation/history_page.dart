@@ -230,8 +230,8 @@ class _StatusBadge extends StatelessWidget {
 
     switch (status) {
       case OrderStatus.delivered:
-        bgColor = DesignTokens.success.withOpacity(0.1);
-        textColor = DesignTokens.success;
+        bgColor = DesignTokens.brand.withOpacity(0.1);
+        textColor = DesignTokens.brand;
         label = '已完成';
         break;
       case OrderStatus.cancelledCustomer:

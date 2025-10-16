@@ -83,11 +83,12 @@ class MenuManagementPage extends ConsumerWidget {
   }
 
   void _showAddMenuItem(BuildContext context, WidgetRef ref) {
+    final merchantId = ref.read(authServiceProvider).currentUserId ?? 'dev-merchant';
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const _MenuItemForm(),
+      builder: (context) => _MenuItemForm(merchantId: merchantId),
     );
   }
 
@@ -96,7 +97,10 @@ class MenuManagementPage extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _MenuItemForm(item: item),
+      builder: (context) => _MenuItemForm(
+        merchantId: ref.read(authServiceProvider).currentUserId ?? 'dev-merchant',
+        item: item,
+      ),
     );
   }
 }
@@ -226,9 +230,10 @@ class _CategorySection extends StatelessWidget {
 }
 
 class _MenuItemForm extends ConsumerStatefulWidget {
+  final String merchantId;
   final MenuItem? item;
 
-  const _MenuItemForm({this.item});
+  const _MenuItemForm({required this.merchantId, this.item});
 
   @override
   ConsumerState<_MenuItemForm> createState() => _MenuItemFormState();
@@ -282,6 +287,7 @@ class _MenuItemFormState extends ConsumerState<_MenuItemForm> {
       if (widget.item == null) {
         // 新增
         await menuService.createMenuItem(
+          merchantId: widget.merchantId,
           category: _categoryController.text.trim(),
           name: _nameController.text.trim(),
           description: _descController.text.trim(),

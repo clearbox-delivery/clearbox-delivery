@@ -120,7 +120,7 @@ class OrderDetailsSheet extends ConsumerWidget {
                     child: CBButton(
                       text: '問題申訴',
                       onPressed: () => _handleIssueReport(context),
-                      variant: CBButtonVariant.secondary,
+                      type: CBButtonType.secondary,
                       size: CBButtonSize.medium,
                     ),
                   ),
@@ -129,7 +129,7 @@ class OrderDetailsSheet extends ConsumerWidget {
                     child: CBButton(
                       text: '聯絡客服',
                       onPressed: () => _handleContactSupport(context),
-                      variant: CBButtonVariant.secondary,
+                      type: CBButtonType.secondary,
                       size: CBButtonSize.medium,
                     ),
                   ),

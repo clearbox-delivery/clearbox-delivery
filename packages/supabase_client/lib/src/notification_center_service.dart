@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_data/core_data.dart';
-import 'package:supabase_client/src/supabase_provider.dart';
+import 'package:supabase_client/supabase_client.dart';
 
 /// Notification Center Service
 /// [REQ-COU-NOTIF-001] Notification list, read/unread management
@@ -25,17 +25,16 @@ class NotificationCenterService {
     }
 
     try {
-      var query = _client
+      var filter = _client
           .from('notifications')
           .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
+          .eq('user_id', userId);
 
       if (unreadOnly) {
-        query = query.isFilter('read_at', null);
+        filter = filter.isFilter('read_at', null);
       }
 
-      final response = await query.limit(100);
+      final response = await filter.order('created_at', ascending: false).limit(100);
 
       final notifications = (response as List)
           .map((json) => NotificationItem.fromJson(json as Map<String, dynamic>))
@@ -80,7 +79,6 @@ class NotificationCenterService {
           .from('notifications')
           .update({'read_at': DateTime.now().toIso8601String()})
           .eq('user_id', userId)
-          .isFilter('read_at', null)
           .select();
 
       // Clear cache

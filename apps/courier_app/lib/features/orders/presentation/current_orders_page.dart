@@ -165,7 +165,7 @@ class _CurrentOrdersPageState extends ConsumerState<CurrentOrdersPage> {
             CBButton(
               text: '關閉',
               onPressed: () => Navigator.of(context).pop(),
-              variant: CBButtonVariant.secondary,
+              type: CBButtonType.secondary,
             ),
           ],
         ),

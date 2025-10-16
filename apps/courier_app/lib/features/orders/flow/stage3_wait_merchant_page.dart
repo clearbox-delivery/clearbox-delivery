@@ -88,7 +88,7 @@ class Stage3WaitMerchantPage extends ConsumerWidget {
                   type: CBToastType.info,
                 );
               },
-              variant: CBButtonVariant.secondary,
+              type: CBButtonType.secondary,
               size: CBButtonSize.large,
               icon: Icons.phone_outlined,
             ),

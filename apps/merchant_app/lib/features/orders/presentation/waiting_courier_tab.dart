@@ -22,7 +22,7 @@ class WaitingCourierTab extends ConsumerWidget {
       return const Center(child: Text('Please login'));
     }
 
-    final ordersStream = ref.watch(realtimeServiceProvider).watchMerchantOrders(merchantId);
+    final ordersStream = ref.watch(realtimeServiceProvider).watchMerchantOrders(merchantId: merchantId);
 
     return StreamBuilder<List<Order>>(
       stream: ordersStream,
@@ -245,8 +245,7 @@ class _WaitingCourierCardState extends ConsumerState<_WaitingCourierCard> {
                   text: '調整備餐時間',
                   onPressed: () => _showAdjustPrepTimeDialog(context, ref),
                   icon: Icons.edit_outlined,
-                  variant: CBButtonVariant.secondary,
-                  size: CBButtonSize.small,
+                  type: CBButtonType.secondary,
                 ),
               ),
               const SizedBox(width: DesignTokens.sp3),
@@ -254,8 +253,7 @@ class _WaitingCourierCardState extends ConsumerState<_WaitingCourierCard> {
                 child: CBButton(
                   text: '取消訂單',
                   onPressed: () => _showCancelDialog(context, ref),
-                  variant: CBButtonVariant.secondary,
-                  size: CBButtonSize.small,
+                  type: CBButtonType.secondary,
                 ),
               ),
             ],
@@ -266,8 +264,7 @@ class _WaitingCourierCardState extends ConsumerState<_WaitingCourierCard> {
           CBButton(
             text: '查看詳情',
             onPressed: () => _showDetails(context),
-            variant: CBButtonVariant.secondary,
-            size: CBButtonSize.small,
+            type: CBButtonType.secondary,
           ),
         ],
       ),

@@ -146,7 +146,7 @@ class OrderHistoryPage extends ConsumerWidget {
                 ),
               ),
               Text(
-                'NT\$${order.mealPrice.toStringAsFixed(0)}',
+                'NT\$—',
                 style: const TextStyle(
                   fontSize: DesignTokens.fsSm,
                   color: DesignTokens.textPrimary,
@@ -168,7 +168,7 @@ class OrderHistoryPage extends ConsumerWidget {
                 ),
               ),
               Text(
-                'NT\$${order.deliveryPrice.toStringAsFixed(0)}',
+                'NT\$${order.deliveryPriceUserSet.toStringAsFixed(0)}',
                 style: const TextStyle(
                   fontSize: DesignTokens.fsSm,
                   color: DesignTokens.textPrimary,

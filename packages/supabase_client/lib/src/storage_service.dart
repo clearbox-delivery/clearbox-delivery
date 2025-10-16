@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:supabase_client/src/supabase_provider.dart';
+import 'package:supabase_client/supabase_client.dart';
+import 'dart:typed_data';
 
 /// Storage service for file uploads
 /// [REQ-COU-KYC-001] Upload KYC documents to Supabase Storage
@@ -27,7 +28,7 @@ class StorageService {
           .from('kyc-documents')
           .uploadBinary(
             path,
-            fileBytes,
+            Uint8List.fromList(fileBytes),
             fileOptions: FileOptions(
               upsert: true,
               contentType: 'image/$fileExtension',
@@ -63,7 +64,7 @@ class StorageService {
           .from('order-photos')
           .uploadBinary(
             path,
-            fileBytes,
+            Uint8List.fromList(fileBytes),
             fileOptions: FileOptions(
               upsert: true,
               contentType: 'image/$fileExtension',
